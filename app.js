@@ -10,6 +10,8 @@ const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new 
 
 const QUESTIONS = [
   { id: "src", q: "今天自己做，还是点外卖？", opts: [["自己动手做", "cook"], ["点外卖 / 出去吃", "out"], ["都行", "any"]] },
+  { id: "people", q: "今天几个人吃？", opts: [["就我一个", "1"], ["两个人", "2"], ["一家人", "family"], ["请客吃饭", "party"], ["都行", "any"]] },
+  { id: "route", q: "想吃哪个路子的菜？", opts: [["家常菜就行", "家常"], ["川湘：香辣下饭", "川湘"], ["粤苏浙：清淡鲜", "粤苏浙"], ["都行", "any"]] },
   { id: "diet", q: "想吃荤的还是素的？", opts: [["想吃肉", "荤"], ["想吃素", "素"], ["都行，不挑", "any"]] },
   { id: "taste", q: "口味想清淡点还是够味？", opts: [["清淡一点", "清淡"], ["家常就行", "适中"], ["要够味", "重口"], ["都行", "any"]] },
   { id: "spicy", q: "吃辣吗？", opts: [["不吃辣", "0"], ["能吃点辣", "2"], ["越辣越好", "4"], ["都行", "any"]] },
@@ -41,9 +43,20 @@ const SOFT = [
   { label: "鸡蛋", kind: "ing", v: "鸡蛋" },
   { label: "豆腐豆制品", kind: "ing", v: "豆制品" },
   { label: "青菜", kind: "ing", v: "蔬菜" },
-  { label: "面食米饭", kind: "ing", v: "面点" }
+  { label: "面食米饭", kind: "ing", v: "面点" },
+  { label: "别放香菜", kind: "avoid", v: "香菜" },
+  { label: "不吃海鲜", kind: "avoid", v: "海鲜" },
+  { label: "不吃牛羊", kind: "avoid", v: "牛羊" },
+  { label: "不吃内脏", kind: "avoid", v: "内脏" }
 ];
 
+const ROUTE = { "家常": ["家常"], "川湘": ["川", "湘"], "粤苏浙": ["粤", "苏", "浙"] };
+const AVOID_GROUPS = {
+  "香菜": ["香菜"],
+  "海鲜": ["鱼", "虾", "蟹", "贝", "鱿鱼", "海带", "蛤", "蚝"],
+  "牛羊": ["羊", "牛"],
+  "内脏": ["肥肠", "大肠", "毛肚", "肝", "腰", "肚丝"]
+};
 const FORM_WORD = { "菜": "炒菜炖菜配米饭", "汤羹": "汤和羹", "主食": "面饭饺子", "小吃": "凉菜小吃" };
 const SOFT_MAP = Object.fromEntries(SOFT.map((o) => [o.kind + ":" + o.v, o.label]));
 
@@ -73,6 +86,14 @@ function scoreOf(d, a, ctx) {
   const why = [];
 
   if (a.form && a.form !== "any" && d.form === a.form) { s += 22; why.push("正好是" + FORM_WORD[a.form]); }
+  if (a.people && a.people !== "any") {
+    if (a.people === "1" && d.tags.includes("一人食")) { s += 12; why.push("一个人吃正好"); }
+    else if (a.people === "family" && d.tags.includes("儿童友好")) { s += 12; why.push("孩子也能吃"); }
+    else if (a.people === "party" && d.tags.includes("宴客")) { s += 14; why.push("端得上桌"); }
+  }
+  if (a.route && a.route !== "any" && (ROUTE[a.route] || []).includes(d.region)) {
+    s += 18; why.push(a.route === "川湘" ? "川湘口味" : a.route === "粤苏浙" ? "清淡鲜香" : "家常味道");
+  }
   if (a.taste && a.taste !== "any" && d.taste === a.taste) {
     s += 16; why.push(a.taste === "清淡" ? "清淡不腻" : a.taste === "重口" ? "够味过瘾" : "家常口味");
   }
@@ -120,7 +141,14 @@ function scoreOf(d, a, ctx) {
   return { s, why };
 }
 
+const avoidGroups = () => [...(state.soft || [])]
+  .filter((k) => k.startsWith("avoid:"))
+  .map((k) => AVOID_GROUPS[k.slice(6)])
+  .filter(Boolean);
+
 const hardPool = (a) => DISHES.filter((d) => {
+  const av = avoidGroups();
+  if (av.length && d.mainIngredients.some((x) => av.some((g) => g.some((k) => x.includes(k))))) return false;
   if (a.diet && a.diet !== "any" && d.diet !== a.diet) return false;
   if (a.spicy !== undefined && a.spicy !== "any" && d.spicy > +a.spicy) return false;
   return !state.disliked.has(d.id);
@@ -175,6 +203,11 @@ function condChips() {
   if (a.spicy === "0") c.push("一点不辣");
   if (a.spicy === "2") c.push("能吃点辣");
   if (a.spicy === "4") c.push("要够辣");
+  if (a.people === "1") c.push("一个人吃");
+  if (a.people === "2") c.push("两个人");
+  if (a.people === "family") c.push("一家人");
+  if (a.people === "party") c.push("请客");
+  if (a.route && a.route !== "any") c.push(a.route === "川湘" ? "川湘口味" : a.route === "粤苏浙" ? "粤苏浙口味" : "家常菜");
   if (a.taste && a.taste !== "any") c.push(a.taste === "清淡" ? "口味清淡" : a.taste === "重口" ? "要够味" : "家常口味");
   if (a.form && a.form !== "any") c.push(FORM_WORD[a.form]);
   if (a.method && a.method !== "any") c.push(a.method);
@@ -223,7 +256,7 @@ function render() {
         return "<button class='opt" + (cur === val ? " sel" : "") + (dead ? " dead" : "") + "'" +
           (dead ? " disabled" : " data-ans='" + val + "'") + ">" + label + (dead ? "（没菜了）" : "") + "</button>";
       }).join("") + "</div>" +
-      "<div style='margin-top:22px'><button class='btn block' data-go='result'>↷ 剩下的不答了，直接推荐</button></div>";
+      "<div style='margin-top:22px'><button class='btn block' data-go='result'>先这样，帮我挑几道 ›</button></div>";
   }
 
   if (state.screen === "soft") {
