@@ -24,7 +24,6 @@ body{
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes pop{0%{transform:scale(.9)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
 @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-#app.enter{animation:fade .16s ease both}
 @media (prefers-reduced-motion: reduce){
   *{animation:none !important;transition:none !important}
 }
@@ -54,6 +53,8 @@ h2{font-size:19px;margin:0 0 12px;font-weight:700}
 }
 
 /* ---------- 选项 ---------- */
+.opt.sel{border-color:var(--red);background:var(--red-soft);color:var(--red)}
+.opt.dead{opacity:.34;border-style:dashed}
 .opt{
   display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;font-size:17px;
   background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px;margin-bottom:10px;color:var(--ink);

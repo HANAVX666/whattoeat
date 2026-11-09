@@ -11,9 +11,12 @@ const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new 
 const QUESTIONS = [
   { id: "src", q: "今天自己做，还是点外卖？", opts: [["自己动手做", "cook"], ["点外卖 / 出去吃", "out"], ["都行", "any"]] },
   { id: "diet", q: "想吃荤的还是素的？", opts: [["想吃肉", "荤"], ["想吃素", "素"], ["都行，不挑", "any"]] },
-  { id: "spicy", q: "能接受多辣？", opts: [["一点辣都不要", "0"], ["能吃点辣", "2"], ["要够辣", "4"]] },
-  { id: "form", q: "想吃哪一类？", opts: [["炒菜炖菜，配米饭", "菜"], ["汤和羹", "汤羹"], ["面、饭、饺子这类", "主食"], ["凉菜、小吃、卤味", "小吃"]] },
-  { id: "time", q: "能花多少时间？", when: (a) => a.src !== "out", opts: [["十分钟内", "10"], ["半小时左右", "30"], ["不着急", "999"]] }
+  { id: "taste", q: "口味想清淡点还是够味？", opts: [["清淡一点", "清淡"], ["家常就行", "适中"], ["要够味", "重口"], ["都行", "any"]] },
+  { id: "spicy", q: "吃辣吗？", opts: [["不吃辣", "0"], ["能吃点辣", "2"], ["越辣越好", "4"], ["都行", "any"]] },
+  { id: "form", q: "想吃哪一类？", opts: [["炒菜炖菜，配米饭", "菜"], ["汤和羹", "汤羹"], ["面、饭、饺子这类", "主食"], ["凉菜、小吃、卤味", "小吃"], ["都行", "any"]] },
+  { id: "method", q: "想怎么做的？", opts: [["炒", "炒"], ["炖、烧", "炖煮"], ["蒸", "蒸"], ["煎、烤", "煎烤"], ["炸", "炸"], ["凉拌", "凉拌"], ["卤", "卤"], ["都行", "any"]] },
+  { id: "main", q: "想吃什么主料？", opts: [["鸡肉", "鸡肉"], ["猪肉", "猪肉"], ["牛肉", "牛肉"], ["鱼、虾", "鱼虾"], ["鸡蛋", "鸡蛋"], ["豆腐豆制品", "豆制品"], ["青菜", "蔬菜"], ["面食米饭", "面点"], ["都行", "any"]] },
+  { id: "time", q: "能花多少时间？", when: (a) => a.src !== "out", opts: [["十分钟内", "10"], ["半小时左右", "30"], ["不着急", "999"], ["都行", "any"]] }
 ];
 
 const activeQs = () => QUESTIONS.filter((q) => !q.when || q.when(state.answers));
@@ -27,26 +30,32 @@ const SOFT = [
   { label: "孩子也爱吃", kind: "tag", v: "儿童友好" },
   { label: "便宜点", kind: "tag", v: "便宜" },
   { label: "十分钟能好", kind: "tag", v: "十分钟快手" },
+  { label: "请客撑场面", kind: "tag", v: "宴客" },
+  { label: "当早餐", kind: "tag", v: "早餐" },
+  { label: "当宵夜", kind: "tag", v: "宵夜" },
+  { label: "热乎暖胃", kind: "tag", v: "暖心" },
   { label: "鸡肉", kind: "ing", v: "鸡肉" },
   { label: "猪肉", kind: "ing", v: "猪肉" },
   { label: "牛肉", kind: "ing", v: "牛肉" },
-  { label: "鱼", kind: "ing", v: "鱼" },
-  { label: "虾", kind: "ing", v: "虾" },
+  { label: "鱼虾", kind: "ing", v: "鱼虾" },
   { label: "鸡蛋", kind: "ing", v: "鸡蛋" },
-  { label: "豆腐", kind: "ing", v: "豆腐" }
+  { label: "豆腐豆制品", kind: "ing", v: "豆制品" },
+  { label: "青菜", kind: "ing", v: "蔬菜" },
+  { label: "面食米饭", kind: "ing", v: "面点" }
 ];
 
 const FORM_WORD = { "菜": "炒菜炖菜配米饭", "汤羹": "汤和羹", "主食": "面饭饺子", "小吃": "凉菜小吃" };
 const SOFT_MAP = Object.fromEntries(SOFT.map((o) => [o.kind + ":" + o.v, o.label]));
 
-const ING_KEYS = {
-  "鸡肉": ["鸡胸肉", "鸡腿", "鸡翅", "鸡爪", "三黄鸡"],
-  "猪肉": ["猪里脊", "五花肉", "排骨", "猪肉末", "火腿肠", "毛肚"],
-  "牛肉": ["牛里脊", "牛腱", "牛肉末"],
-  "鱼": ["鲈鱼", "草鱼", "鱼头"],
-  "虾": ["鲜虾"],
-  "鸡蛋": ["鸡蛋", "蛋清"],
-  "豆腐": ["嫩豆腐"]
+const FOOD_GROUPS = {
+  "鸡肉": ["鸡胸肉", "鸡腿", "鸡翅", "鸡爪", "三黄鸡", "鸡肉"],
+  "猪肉": ["猪里脊", "五花肉", "排骨", "猪肉末", "火腿肠", "猪蹄"],
+  "牛肉": ["牛里脊", "牛腱", "牛肉末", "牛肉"],
+  "鱼虾": ["鲈鱼", "草鱼", "鱼头", "鲜虾", "虾仁", "鱼片"],
+  "鸡蛋": ["鸡蛋", "蛋清", "鸭蛋"],
+  "豆制品": ["嫩豆腐", "豆腐", "豆干", "毛豆", "腐竹"],
+  "蔬菜": ["大白菜", "青菜", "黄瓜", "番茄", "土豆", "茄子", "青椒", "蒜苗", "冬瓜", "豆芽", "萝卜", "蘑菇", "西兰花", "莲藕"],
+  "面点": ["面条", "米饭", "面粉", "饺子皮", "河粉", "凉皮", "年糕", "馒头", "粉丝", "糯米"]
 };
 
 const EMOJI = [["鸡","🍗"],["鸭","🦆"],["牛","🥩"],["猪","🥓"],["排骨","🍖"],["鱼","🐟"],["虾","🦐"],["蛋","🥚"],
@@ -63,17 +72,24 @@ function scoreOf(d, a, ctx) {
   let s = (d.popularity - 3) * 6;          // 大众度只值 0~12 分，不再主导排序
   const why = [];
 
-  if (a.form && d.form === a.form) { s += 22; why.push("正好是" + FORM_WORD[a.form]); }
+  if (a.form && a.form !== "any" && d.form === a.form) { s += 22; why.push("正好是" + FORM_WORD[a.form]); }
+  if (a.taste && a.taste !== "any" && d.taste === a.taste) {
+    s += 16; why.push(a.taste === "清淡" ? "清淡不腻" : a.taste === "重口" ? "够味过瘾" : "家常口味");
+  }
+  if (a.method && a.method !== "any" && d.method === a.method) { s += 18; why.push("是" + a.method + "的"); }
+  if (a.main && a.main !== "any" && (FOOD_GROUPS[a.main] || []).some((x) => d.mainIngredients.includes(x))) {
+    s += 24; why.push("有" + a.main);
+  }
   if (a.diet && a.diet !== "any" && d.diet === a.diet) s += 10;
 
-  if (a.spicy !== undefined) {
+  if (a.spicy !== undefined && a.spicy !== "any") {
     const cap = +a.spicy;
     if (cap >= 4) { s += d.spicy * 4; if (d.spicy >= 3) why.push("够辣"); }
     else if (cap === 2) { s += 8 - Math.abs(d.spicy - 2) * 3; if (d.spicy === 2) why.push("辣度刚好"); }
     else { s += 8; }
   }
 
-  if (a.time) {
+  if (a.time && a.time !== "any") {
     const t = +a.time;
     if (d.timeMin <= t) { s += 18; if (t <= 10) why.push(d.timeMin + " 分钟就好"); }
     else s -= Math.min(30, (d.timeMin - t) / 2);
@@ -91,7 +107,7 @@ function scoreOf(d, a, ctx) {
     const i = k.indexOf(":");
     const kind = k.slice(0, i), v = k.slice(i + 1);
     if (kind === "tag" && d.tags.includes(v)) { s += 13; softHit++; why.push(SOFT_MAP[k] || v); }
-    else if (kind === "ing" && d.mainIngredients.some((x) => (ING_KEYS[v] || []).includes(x))) { s += 15; softHit++; why.push("有" + v); }
+    else if (kind === "ing" && d.mainIngredients.some((x) => (FOOD_GROUPS[v] || []).includes(x))) { s += 15; softHit++; why.push("有" + v); }
   }
 
   if (a.food && a.food.length) {
@@ -159,8 +175,11 @@ function condChips() {
   if (a.spicy === "0") c.push("一点不辣");
   if (a.spicy === "2") c.push("能吃点辣");
   if (a.spicy === "4") c.push("要够辣");
-  if (a.form) c.push(FORM_WORD[a.form]);
-  if (a.time) c.push(a.time === "999" ? "不赶时间" : a.time + " 分钟内");
+  if (a.taste && a.taste !== "any") c.push(a.taste === "清淡" ? "口味清淡" : a.taste === "重口" ? "要够味" : "家常口味");
+  if (a.form && a.form !== "any") c.push(FORM_WORD[a.form]);
+  if (a.method && a.method !== "any") c.push(a.method);
+  if (a.main && a.main !== "any") c.push("主料：" + a.main);
+  if (a.time && a.time !== "any") c.push(a.time === "999" ? "不赶时间" : a.time + " 分钟内");
   for (const k of state.soft || []) c.push(SOFT_MAP[k] || k.slice(k.indexOf(":") + 1));
   if (!c.length) return "";
   return "<div class='conds'>" + c.map((x) => "<span>" + x + "</span>").join("") + "</div>";
@@ -193,13 +212,18 @@ function render() {
   if (state.screen === "quiz") {
     const qs = activeQs();
     const Q = qs[Math.min(state.qi, qs.length - 1)];
-    const done = qs.filter((q) => state.answers[q.id] !== undefined).length;
-    const ready = done >= Math.min(4, qs.length);
+    const cur = state.answers[Q.id];
     v.innerHTML = "<button class='back' data-go='home'>‹ 返回</button>" +
-      "<div class='progress'>" + qs.map((q, i) => "<div class='dot " + (i < done ? "on" : "") + "'></div>").join("") + "</div>" +
+      "<div class='progress'>" + qs.map((q) => "<div class='dot " + (state.answers[q.id] !== undefined ? "on" : "") + "'></div>").join("") + "</div>" +
       "<h2>" + Q.q + "</h2>" +
-      "<div>" + Q.opts.map(([label, val]) => "<button class='opt' data-ans='" + val + "'>" + label + "</button>").join("") + "</div>" +
-      (ready ? "<div style='margin-top:22px'><button class='btn primary block' data-go='soft'>下一步 ›</button></div>" : "");
+      "<p class='sub' style='margin:-8px 0 14px;font-size:13px'>第 " + (qs.indexOf(Q) + 1) + " / " + qs.length + " 题 · 拿不准就点「都行」</p>" +
+      "<div>" + Q.opts.map(([label, val]) => {
+        // 荤素和辣度是真排除，会筛空就别让人点
+        const dead = (Q.id === "diet" || Q.id === "spicy") && val !== "any" && hardPool(Object.assign({}, state.answers, { [Q.id]: val })).length === 0;
+        return "<button class='opt" + (cur === val ? " sel" : "") + (dead ? " dead" : "") + "'" +
+          (dead ? " disabled" : " data-ans='" + val + "'") + ">" + label + (dead ? "（没菜了）" : "") + "</button>";
+      }).join("") + "</div>" +
+      "<div style='margin-top:22px'><button class='btn block' data-go='result'>↷ 剩下的不答了，直接推荐</button></div>";
   }
 
   if (state.screen === "soft") {
@@ -269,10 +293,6 @@ function render() {
       "<a class='btn' href='" + SEARCH.video(d.name) + "' target='_blank' rel='noopener'>▶ 看视频</a></div>" +
       "<div class='row'><button class='btn block' data-dislike='" + d.id + "'>" + (state.disliked.has(d.id) ? "✓ 已标记不想吃" : "🙅 以后别再推这道") + "</button></div>";
   }
-  // 每次换页重新触发入场动画
-  v.classList.remove("enter");
-  void v.offsetWidth;
-  v.classList.add("enter");
   window.scrollTo(0, 0);
 }
 
