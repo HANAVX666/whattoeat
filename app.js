@@ -6,7 +6,7 @@ const SEARCH = {
 };
 
 let DISHES = [];
-const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), batch: [], pantryText: "" };
+const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), batch: [], reasons: new Map(), refresh: 0, pantryText: "" };
 
 const QUESTIONS = [
   { id: "src", q: "今天自己做，还是点外卖？", opts: [["自己动手做", "cook"], ["点外卖 / 出去吃", "out"], ["都行", "any"]] },
@@ -36,6 +36,9 @@ const SOFT = [
   { label: "豆腐", kind: "ing", v: "豆腐" }
 ];
 
+const FORM_WORD = { "菜": "炒菜炖菜配米饭", "汤羹": "汤和羹", "主食": "面饭饺子", "小吃": "凉菜小吃" };
+const SOFT_MAP = Object.fromEntries(SOFT.map((o) => [o.kind + ":" + o.v, o.label]));
+
 const ING_KEYS = {
   "鸡肉": ["鸡胸肉", "鸡腿", "鸡翅", "鸡爪", "三黄鸡"],
   "猪肉": ["猪里脊", "五花肉", "排骨", "猪肉末", "火腿肠", "毛肚"],
@@ -53,29 +56,52 @@ const emojiOf = (d) => { for (const [k, e] of EMOJI) if (d.mainIngredients.join(
 const hueOf = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
 const tint = (d) => "linear-gradient(135deg,hsl(" + hueOf(d.id) + ",72%,88%),hsl(" + ((hueOf(d.id) + 40) % 360) + ",64%,80%))";
 const spicyWord = ["不辣", "微辣", "中辣", "麻辣", "爆辣"];
+const BATCH = 6;   // 一次给 6 道：手机上两列三行，一屏看完，不至于挑花眼
 
-function score(d, a) {
-  let s = d.popularity * 10;
-  if (a.form && a.form !== "any" && d.form === a.form) s += 9;
-  if (a.src === "cook" && d.difficulty === 3) s -= 6;
-  if (a.src === "out" && d.popularity < 4) s -= 8;
+// 每道菜算一个匹配分，同时记下「为什么推荐它」
+function scoreOf(d, a, ctx) {
+  let s = (d.popularity - 3) * 6;          // 大众度只值 0~12 分，不再主导排序
+  const why = [];
+
+  if (a.form && d.form === a.form) { s += 22; why.push("正好是" + FORM_WORD[a.form]); }
+  if (a.diet && a.diet !== "any" && d.diet === a.diet) s += 10;
+
+  if (a.spicy !== undefined) {
+    const cap = +a.spicy;
+    if (cap >= 4) { s += d.spicy * 4; if (d.spicy >= 3) why.push("够辣"); }
+    else if (cap === 2) { s += 8 - Math.abs(d.spicy - 2) * 3; if (d.spicy === 2) why.push("辣度刚好"); }
+    else { s += 8; }
+  }
+
   if (a.time) {
     const t = +a.time;
-    if (d.timeMin <= t) s += 5;
-    else s -= Math.min(18, (d.timeMin - t) / 4);
+    if (d.timeMin <= t) { s += 18; if (t <= 10) why.push(d.timeMin + " 分钟就好"); }
+    else s -= Math.min(30, (d.timeMin - t) / 2);
   }
+
+  if (a.src === "out") {
+    if (d.difficulty >= 3) s -= 12;
+    if (d.popularity >= 4) { s += 6; why.push("外面常见"); }
+  }
+  if (a.src === "cook") s -= d.difficulty * 3;
+
+  let softHit = 0;
   for (const k of state.soft || []) {
+    if (softHit >= 2) break;
     const i = k.indexOf(":");
     const kind = k.slice(0, i), v = k.slice(i + 1);
-    if (kind === "tag" && d.tags.includes(v)) s += 7;
-    if (kind === "ing" && d.mainIngredients.some((x) => (ING_KEYS[v] || []).includes(x))) s += 8;
+    if (kind === "tag" && d.tags.includes(v)) { s += 13; softHit++; why.push(SOFT_MAP[k] || v); }
+    else if (kind === "ing" && d.mainIngredients.some((x) => (ING_KEYS[v] || []).includes(x))) { s += 15; softHit++; why.push("有" + v); }
   }
+
   if (a.food && a.food.length) {
-    const hit = d.mainIngredients.filter((x) => a.food.includes(x)).length;
-    s += hit * 7;
+    const hit = d.mainIngredients.filter((x) => a.food.includes(x));
+    if (hit.length) { s += Math.min(3, hit.length) * 30; why.push("能用上" + hit.slice(0, 2).join("、")); }
   }
-  s += Math.random() * 2.5;
-  return s;
+
+  s -= (ctx.refresh || 0) * 3;             // 刷新越多，越偏向冷门
+  s += (Math.random() - 0.5) * 3;
+  return { s, why };
 }
 
 const hardPool = (a) => DISHES.filter((d) => {
@@ -90,24 +116,67 @@ function pick(reset) {
     const hit = pool.filter((d) => d.mainIngredients.some((x) => state.answers.food.includes(x)));
     if (hit.length) pool = hit;
   }
-  if (reset) state.shown = new Set();
-  if (!pool.length) { state.batch = []; return; }
-  if (pool.every((d) => state.shown.has(d.id))) state.shown = new Set();
+  if (reset) { state.shown = new Set(); state.refresh = 0; }
+  if (!pool.length) { state.batch = []; state.reasons = new Map(); return; }
+  if (pool.every((d) => state.shown.has(d.id))) { state.shown = new Set(); state.refresh = 0; }
+
   const rest = pool.filter((d) => !state.shown.has(d.id));
-  const ranked = rest.map((d) => ({ d, s: score(d, state.answers) })).sort((x, y) => y.s - x.s);
-  state.batch = ranked.slice(0, 12).map((x) => x.d);
+  const ranked = rest
+    .map((d) => { const r = scoreOf(d, state.answers, state); return { d, s: r.s, why: r.why }; })
+    .sort((x, y) => y.s - x.s);
+
+  // 多样性：同一个主料最多 2 道，同一种做法最多 3 道，不然一屏全是鸡
+  const out = [], ingCount = {}, methodCount = {};
+  for (const it of ranked) {
+    if (out.length >= BATCH) break;
+    const ing = it.d.mainIngredients[0] || "其他";
+    if ((ingCount[ing] || 0) >= 2) continue;
+    if ((methodCount[it.d.method] || 0) >= 3) continue;
+    ingCount[ing] = (ingCount[ing] || 0) + 1;
+    methodCount[it.d.method] = (methodCount[it.d.method] || 0) + 1;
+    out.push(it);
+  }
+  if (out.length < BATCH) {
+    for (const it of ranked) {
+      if (out.length >= BATCH) break;
+      if (out.includes(it)) continue;
+      out.push(it);
+    }
+  }
+
+  state.batch = out.map((x) => x.d);
+  state.reasons = new Map(out.map((x) => [x.d.id, x.why]));
   state.batch.forEach((d) => state.shown.add(d.id));
+  state.refresh = (state.refresh || 0) + 1;
+}
+
+function condChips() {
+  const a = state.answers, c = [];
+  if (a.src === "cook") c.push("自己做");
+  if (a.src === "out") c.push("外卖");
+  if (a.diet === "荤") c.push("想吃肉");
+  if (a.diet === "素") c.push("想吃素");
+  if (a.spicy === "0") c.push("一点不辣");
+  if (a.spicy === "2") c.push("能吃点辣");
+  if (a.spicy === "4") c.push("要够辣");
+  if (a.form) c.push(FORM_WORD[a.form]);
+  if (a.time) c.push(a.time === "999" ? "不赶时间" : a.time + " 分钟内");
+  for (const k of state.soft || []) c.push(SOFT_MAP[k] || k.slice(k.indexOf(":") + 1));
+  if (!c.length) return "";
+  return "<div class='conds'>" + c.map((x) => "<span>" + x + "</span>").join("") + "</div>";
 }
 
 function thumb(d) {
   const img = d.image ? "<img src='" + d.image + "' loading='lazy' alt='' onerror='this.remove()'>" : "";
-  return "<div class='thumb' style='background:" + tint(d) + "'>" + emojiOf(d) + img + "</div>";
+  return "<div class='thumb' style='background:" + tint(d) + "'><span>" + emojiOf(d) + "</span>" + img + "</div>";
 }
 
-function card(d) {
-  return "<div class='dish' data-id='" + d.id + "'>" + thumb(d) +
+function card(d, i) {
+  const why = ((state.reasons && state.reasons.get(d.id)) || [])[0];
+  return "<div class='dish' data-id='" + d.id + "' style='--i:" + (i || 0) + "'>" + thumb(d) +
     "<div class='dish-body'><div class='dish-name'>" + d.name + "</div>" +
-    "<div class='meta'><span>" + d.timeMin + " 分钟</span><span>" + spicyWord[d.spicy] + "</span></div></div></div>";
+    "<div class='meta'><span>" + d.timeMin + " 分钟</span><span>" + spicyWord[d.spicy] + "</span></div>" +
+    (why ? "<div class='why'>" + why + "</div>" : "") + "</div></div>";
 }
 
 function render() {
@@ -115,7 +184,7 @@ function render() {
 
   if (state.screen === "home") {
     v.innerHTML = "<h1>今天吃什么</h1><p class='sub'>别纠结了，问你几个问题。</p>" +
-      "<button class='big' data-go='quiz'><span class='ico'>🤔</span><span><div class='t'>不知道吃什么</div><div class='d'>问几个问题，给你 12 个选项</div></span><span class='arrow'>›</span></button>" +
+      "<button class='big' data-go='quiz'><span class='ico'>🤔</span><span><div class='t'>不知道吃什么</div><div class='d'>问几个问题，给你 6 个选项</div></span><span class='arrow'>›</span></button>" +
       "<button class='big' data-go='pantry'><span class='ico'>🥕</span><span><div class='t'>家里有食材</div><div class='d'>告诉我你有什么，我报菜名</div></span><span class='arrow'>›</span></button>" +
       "<button class='big' data-go='spin'><span class='ico'>🎯</span><span><div class='t'>直接来一批</div><div class='d'>不问了，随便抽</div></span><span class='arrow'>›</span></button>" +
       "<p class='sub' style='margin-top:26px'>菜库 " + DISHES.length + " 道</p>";
@@ -149,9 +218,12 @@ function render() {
       v.innerHTML = "<button class='back' data-go='home'>‹ 返回</button><div class='empty'>筛得太狠了，一道都不剩。<br>回去放宽一个条件试试。</div>" +
         "<button class='btn block' data-go='quiz' style='margin-top:20px'>改一下答案</button>";
     } else {
+      const nth = state.refresh > 1 ? "第 " + state.refresh + " 批 · 越往后越小众" : "按你的条件排的";
       v.innerHTML = "<button class='back' data-go='quiz'>‹ 改答案</button>" +
-        "<h2>今天可以吃这些</h2><p class='sub' style='margin:-6px 0 14px'>点一道看做法，不满意就刷新。</p>" +
-        "<div class='grid'>" + state.batch.map(card).join("") + "</div>" +
+        "<h2>今天可以吃这些</h2>" + condChips() +
+        "<p class='sub' style='margin:10px 0 14px'>" + nth + "，点一道看做法。</p>" +
+        "<div class='grid'>" + state.batch.map((d, i) => card(d, i)).join("") + "</div>" +
+        "<div style='margin-top:18px'><button class='btn primary block' data-go='one'>🎯 别挑了，帮我定一个</button></div>" +
         "<div class='row'><button class='btn' data-go='refresh'>🎲 刷新换一批</button><button class='btn' data-go='quiz'>↺ 改答案</button></div>" +
         "<p class='sub' style='text-align:center;margin:14px 0 0;font-size:12px'>越往后翻越冷门</p>";
     }
@@ -172,7 +244,8 @@ function render() {
     } else {
       v.innerHTML = "<button class='back' data-go='pantry'>‹ 改食材</button>" +
         "<h2>这些能用上你的食材</h2><p class='sub' style='margin:-6px 0 14px'>按能用的食材数量排的序。</p>" +
-        "<div class='grid'>" + state.batch.map(card).join("") + "</div>" +
+        "<div class='grid'>" + state.batch.map((d, i) => card(d, i)).join("") + "</div>" +
+        "<div style='margin-top:18px'><button class='btn primary block' data-go='one'>🎯 就做这个</button></div>" +
         "<div class='row'><button class='btn' data-go='pantryRefresh'>🎲 换一批</button><button class='btn' data-go='pantry'>↺ 改食材</button></div>";
     }
   }
@@ -180,8 +253,8 @@ function render() {
   if (state.screen === "detail") {
     const d = DISHES.find((x) => x.id === state.current);
     const hero = d.image
-      ? "<div class='hero' style='background:" + tint(d) + "'>" + emojiOf(d) + "<img src='" + d.image + "' alt='' onerror='this.remove()'></div>"
-      : "<div class='hero' style='background:" + tint(d) + "'>" + emojiOf(d) + "</div>";
+      ? "<div class='hero' style='background:" + tint(d) + "'><span style='position:relative;z-index:0'>" + emojiOf(d) + "</span><img src='" + d.image + "' alt='' onerror='this.remove()'></div>"
+      : "<div class='hero' style='background:" + tint(d) + "'><span>" + emojiOf(d) + "</span></div>";
     v.innerHTML = "<button class='back' data-go='back'>‹ 返回</button>" + hero +
       "<h1 style='font-size:24px;margin-bottom:8px'>" + d.name + "</h1>" +
       "<div class='meta' style='margin-bottom:16px'>" +
@@ -196,6 +269,10 @@ function render() {
       "<a class='btn' href='" + SEARCH.video(d.name) + "' target='_blank' rel='noopener'>▶ 看视频</a></div>" +
       "<div class='row'><button class='btn block' data-dislike='" + d.id + "'>" + (state.disliked.has(d.id) ? "✓ 已标记不想吃" : "🙅 以后别再推这道") + "</button></div>";
   }
+  // 每次换页重新触发入场动画
+  v.classList.remove("enter");
+  void v.offsetWidth;
+  v.classList.add("enter");
   window.scrollTo(0, 0);
 }
 
@@ -241,6 +318,12 @@ document.addEventListener("click", (e) => {
   else if (go === "soft") { state.screen = "soft"; }
   else if (go === "result") { state.screen = "result"; pick(true); }
   else if (go === "refresh") { state.screen = "result"; pick(false); }
+  else if (go === "spin") { state.answers = {}; state.soft = new Set(); state.shown = new Set(); state.screen = "result"; pick(true); }
+  else if (go === "one") {
+    if (!state.batch.length) { render(); return; }
+    const d = state.batch[Math.floor(Math.random() * state.batch.length)];
+    state.current = d.id; state.from = state.screen; state.screen = "detail";
+  }
   else if (go === "back") { state.screen = state.from || "home"; }
   else if (go === "pantry") {
     const inp = $("#pantry"); if (inp) state.pantryText = inp.value;
