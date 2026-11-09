@@ -612,5 +612,209 @@
       "土鸡"
     ],
     "group": "禽肉"
+  },
+  {
+    "name": "扇贝",
+    "aliases": [
+      "元贝"
+    ],
+    "group": "海鲜"
+  },
+  {
+    "name": "豆豉",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "腊肠",
+    "aliases": [
+      "腊肉肠"
+    ],
+    "group": "肉"
+  },
+  {
+    "name": "春笋",
+    "aliases": [
+      "竹笋"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "虾仁",
+    "aliases": [],
+    "group": "海鲜"
+  },
+  {
+    "name": "咸肉",
+    "aliases": [
+      "火腿肉"
+    ],
+    "group": "肉"
+  },
+  {
+    "name": "鸭",
+    "aliases": [
+      "鸭子"
+    ],
+    "group": "肉"
+  },
+  {
+    "name": "甜面酱",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "豆腐皮",
+    "aliases": [
+      "千张"
+    ],
+    "group": "豆制品"
+  },
+  {
+    "name": "粉条",
+    "aliases": [
+      "红薯粉"
+    ],
+    "group": "主食"
+  },
+  {
+    "name": "干蘑菇",
+    "aliases": [
+      "榛蘑"
+    ],
+    "group": "菌菇"
+  },
+  {
+    "name": "冷面",
+    "aliases": [
+      "烤冷面"
+    ],
+    "group": "主食"
+  },
+  {
+    "name": "羊肉",
+    "aliases": [
+      "羊腿肉"
+    ],
+    "group": "肉"
+  },
+  {
+    "name": "米线",
+    "aliases": [],
+    "group": "主食"
+  },
+  {
+    "name": "芽菜",
+    "aliases": [
+      "冬菜"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "蒸肉米粉",
+    "aliases": [
+      "米粉"
+    ],
+    "group": "调味"
+  },
+  {
+    "name": "酸豆角",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "银耳",
+    "aliases": [
+      "白木耳"
+    ],
+    "group": "菌菇"
+  },
+  {
+    "name": "莲子",
+    "aliases": [],
+    "group": "干货"
+  },
+  {
+    "name": "生菜",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "孜然",
+    "aliases": [
+      "孜然粒"
+    ],
+    "group": "调味"
+  },
+  {
+    "name": "蚝油",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "魔芋",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "娃娃菜",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "金针菇",
+    "aliases": [],
+    "group": "菌菇"
+  },
+  {
+    "name": "猪蹄",
+    "aliases": [],
+    "group": "肉"
+  },
+  {
+    "name": "黄豆",
+    "aliases": [],
+    "group": "豆制品"
+  },
+  {
+    "name": "梅干菜",
+    "aliases": [
+      "霉干菜"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "带鱼",
+    "aliases": [],
+    "group": "海鲜"
+  },
+  {
+    "name": "鳜鱼",
+    "aliases": [
+      "桂鱼"
+    ],
+    "group": "海鲜"
+  },
+  {
+    "name": "红薯",
+    "aliases": [
+      "地瓜"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "小米",
+    "aliases": [],
+    "group": "主食"
+  },
+  {
+    "name": "啤酒",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "黄豆酱",
+    "aliases": [],
+    "group": "调味"
   }
 ]

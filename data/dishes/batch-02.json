@@ -682,9 +682,7 @@
   {
     "id": "shuizhu-niurou",
     "name": "水煮牛肉",
-    "aliases": [
-      "水煮肉片"
-    ],
+    "aliases": [],
     "region": "川",
     "diet": "荤",
     "taste": "重口",
@@ -753,9 +751,7 @@
   {
     "id": "suancai-yu",
     "name": "酸菜鱼",
-    "aliases": [
-      "酸汤鱼"
-    ],
+    "aliases": [],
     "region": "川",
     "diet": "荤",
     "taste": "重口",
