@@ -2,3 +2,11 @@ dist/
 node_modules/
 Thumbs.db
 .DS_Store
+
+.shots/
+.shot*.png
+preview.html
+.srv.log
+.srv.pid
+.chrome-tmp/
+.chrome.pid

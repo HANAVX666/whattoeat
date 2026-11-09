@@ -81,12 +81,34 @@ const FOOD_GROUPS = {
   "菌菇": ["香菇", "平菇", "杏鲍菇", "金针菇", "干蘑菇", "木耳"]
 };
 
-const EMOJI = [["鸡","🍗"],["鸭","🦆"],["牛","🥩"],["猪","🥓"],["排骨","🍖"],["鱼","🐟"],["虾","🦐"],["蛋","🥚"],
-  ["豆腐","🍲"],["面","🍜"],["饭","🍚"],["粉","🍜"],["饺","🥟"],["茄子","🍆"],["土豆","🥔"],["黄瓜","🥒"],
-  ["番茄","🍅"],["白菜","🥬"],["菜","🥬"],["汤","🥣"],["饼","🥞"],["花生","🥜"]];
-const emojiOf = (d) => { for (const [k, e] of EMOJI) if (d.mainIngredients.join("").includes(k) || d.name.includes(k)) return e; return "🍱"; };
-const hueOf = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
-const tint = (d) => "linear-gradient(135deg,hsl(" + hueOf(d.id) + ",72%,88%),hsl(" + ((hueOf(d.id) + 40) % 360) + ",64%,80%))";
+// 具体词排前面：「鸡蛋」必须先命中「蛋」，否则整盘蛋都变成鸡腿
+const EMOJI = [["蛋","🥚"],["鸡翅","🍗"],["鸡腿","🍗"],["鸡","🍗"],["鸭","🦆"],["排骨","🍖"],["牛","🥩"],
+  ["羊","🍖"],["猪","🥓"],["鱼","🐟"],["虾","🦐"],["蟹","🦀"],["蛤","🦪"],["鱿","🦑"],
+  ["豆腐","🍲"],["番茄","🍅"],["黄瓜","🥒"],["茄子","🍆"],["土豆","🥔"],["白菜","🥬"],["菜","🥬"],
+  ["饺","🥟"],["面","🍜"],["粉","🍜"],["米线","🍜"],["饭","🍚"],["粥","🥣"],["饼","🥞"],["馍","🥖"],
+  ["汤","🥣"],["花生","🥜"],["菇","🍄"],["玉米","🌽"],["南瓜","🎃"]];
+const emojiOf = (d) => {
+  // 菜名里出现得越靠前，越可能是主角：番茄炒蛋 → 🍅 而不是 🥚
+  let best = null, at = 1e9;
+  for (const [k, e] of EMOJI) {
+    const i = d.name.indexOf(k);
+    if (i >= 0 && (i < at || (i === at && best && k.length > best[0].length))) { best = [k, e]; at = i; }
+  }
+  if (best) return best[1];
+  for (const [k, e] of EMOJI) if (d.mainIngredients.join("").includes(k)) return e;
+  return "🍱";
+};
+// 按菜的属性给底色，比随机色更像「食物」，也稳定不会每次变
+const TINTS = {
+  汤羹: "linear-gradient(150deg,#fbe9c4,#f2d69f)",
+  素:   "linear-gradient(150deg,#e8f2db,#cfe3bd)",
+  主食: "linear-gradient(150deg,#f8ebd2,#eed8b2)",
+  小食: "linear-gradient(150deg,#fce4dc,#f5cabb)",
+  荤:   "linear-gradient(150deg,#fbe7d0,#f0d3b4)"
+};
+const tint = (d) => d.spicy >= 3 ? "linear-gradient(150deg,#fbdccb,#f3bc9f)"
+  : d.diet === "素" ? TINTS["素"]
+  : TINTS[d.form] || TINTS["荤"];
 const spicyWord = ["不辣", "微辣", "中辣", "麻辣", "爆辣"];
 const BATCH = 6;   // 一次给 6 道：手机上两列三行，一屏看完，不至于挑花眼
 
@@ -237,104 +259,151 @@ function card(d, i) {
   const why = ((state.reasons && state.reasons.get(d.id)) || [])[0];
   return "<div class='dish' data-id='" + d.id + "' style='--i:" + (i || 0) + "'>" + thumb(d) +
     "<div class='dish-body'><div class='dish-name'>" + d.name + "</div>" +
-    "<div class='meta'><span>" + d.timeMin + " 分钟</span><span>" + spicyWord[d.spicy] + "</span></div>" +
+    "<div class='meta'><span class='chip'>" + d.timeMin + " 分钟</span><span class='chip'>" + spicyWord[d.spicy] + "</span></div>" +
     (why ? "<div class='why'>" + why + "</div>" : "") + "</div></div>";
+}
+
+function bigBtn(tone, ico, title, desc, go) {
+  return "<button class='big' data-go='" + go + "' data-tone='" + tone + "'>" +
+    "<span class='ico'>" + ico + "</span>" +
+    "<span class='txt'><span class='t'>" + title + "</span><span class='d'>" + desc + "</span></span>" +
+    "<span class='arrow'>›</span></button>";
 }
 
 function render() {
   const v = $("#app");
 
   if (state.screen === "home") {
-    v.innerHTML = "<h1>今天吃什么</h1><p class='sub'>别纠结了，问你几个问题。</p>" +
-      "<button class='big' data-go='quiz'><span class='ico'>🤔</span><span><div class='t'>不知道吃什么</div><div class='d'>问几个问题，给你 6 个选项</div></span><span class='arrow'>›</span></button>" +
-      "<button class='big' data-go='pantry'><span class='ico'>🥕</span><span><div class='t'>家里有食材</div><div class='d'>告诉我你有什么，我报菜名</div></span><span class='arrow'>›</span></button>" +
-      "<button class='big' data-go='spin'><span class='ico'>🎯</span><span><div class='t'>直接来一批</div><div class='d'>不问了，随便抽</div></span><span class='arrow'>›</span></button>" +
-      "<p class='sub' style='margin-top:26px'>菜库 " + DISHES.length + " 道</p>";
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='hero-home'><span class='kicker'>今天吃什么</span>" +
+      "<h1>别纠结了，<em>我帮你挑</em></h1>" +
+      "<p class='sub'>回答几个问题，或者告诉我冰箱里有什么。</p></div>" +
+      bigBtn("a", "🤔", "不知道吃什么", "问几个问题，按口味挑菜", "quiz") +
+      bigBtn("b", "🥕", "家里有食材", "告诉我你有什么，我报菜名", "pantry") +
+      bigBtn("c", "🎯", "直接来一批", "不问条件，随便抽几道", "spin") +
+      "<p class='foot-note'>菜库 " + DISHES.length + " 道 · 点过「不想吃」的不会再出现</p>" +
+    "</div>";
   }
 
   if (state.screen === "quiz") {
     const qs = activeQs();
     const Q = qs[Math.min(state.qi, qs.length - 1)];
+    const idx = qs.indexOf(Q);
     const cur = state.answers[Q.id];
-    v.innerHTML = "<button class='back' data-go='home'>‹ 返回</button>" +
-      "<div class='progress'>" + qs.map((q) => "<div class='dot " + (state.answers[q.id] !== undefined ? "on" : "") + "'></div>").join("") + "</div>" +
-      "<h2>" + Q.q + "</h2>" +
-      "<p class='sub' style='margin:-8px 0 14px;font-size:13px'>第 " + (qs.indexOf(Q) + 1) + " / " + qs.length + " 题 · 拿不准就点「都行」</p>" +
-      "<div>" + Q.opts.map(([label, val]) => {
-        // 荤素和辣度是真排除，会筛空就别让人点
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='topbar'><button class='back' data-go='home' aria-label='返回'>‹</button>" +
+      "<div class='progress'>" + qs.map((q, i) => "<div class='dot " + (state.answers[q.id] !== undefined ? "on" : i === idx ? "cur" : "") + "'></div>").join("") + "</div>" +
+      "<span class='counter'>" + (idx + 1) + " / " + qs.length + "</span></div>" +
+      "<div class='q-wrap'><h2 class='q-title'>" + Q.q + "</h2>" +
+      "<p class='q-hint'>拿不准就选「都行」，我按常理挑。</p><div class='opts'>" +
+      Q.opts.map(([label, val], i) => {
         const dead = (Q.id === "diet" || Q.id === "spicy") && val !== "any" && hardPool(Object.assign({}, state.answers, { [Q.id]: val })).length === 0;
-        return "<button class='opt" + (cur === val ? " sel" : "") + (dead ? " dead" : "") + "'" +
-          (dead ? " disabled" : " data-ans='" + val + "'") + ">" + label + (dead ? "（没菜了）" : "") + "</button>";
-      }).join("") + "</div>" +
-      "<div style='margin-top:22px'><button class='btn block' data-go='result'>先这样，帮我挑几道 ›</button></div>";
+        const sel = cur === val;
+        return "<button class='opt" + (sel ? " sel" : "") + (dead ? " dead" : "") + "'" +
+          (dead ? " disabled" : " data-ans='" + val + "'") + ">" +
+          "<span class='num'>" + (i + 1) + "</span>" +
+          "<span class='lbl'>" + label + (dead ? "（没菜了）" : "") + "</span>" +
+          "<span class='tick'>✓</span></button>";
+      }).join("") + "</div></div>" +
+      "<div class='soft-foot'><button class='btn ghost block' data-go='result'>先这样，帮我挑几道 ›</button></div></div>";
   }
 
   if (state.screen === "soft") {
-    v.innerHTML = "<button class='back' data-go='quiz'>‹ 返回</button>" +
-      "<h2>还有什么讲究？</h2><p class='sub' style='margin:-6px 0 16px'>可以多选，也可以一个都不选。</p>" +
-      "<div class='chips'>" + SOFT.map((o) => {
-        const key = o.kind + ":" + o.v;
-        const on = (state.soft || new Set()).has(key);
-        return "<button class='chipbtn" + (on ? " sel" : "") + "' data-soft='" + key + "'>" + o.label + "</button>";
-      }).join("") + "</div>" +
-      "<button class='btn primary block' data-go='result' style='margin-top:24px'>就这些，推荐食物 →</button>";
+    const groups = [
+      ["今天就想吃", SOFT.filter((o) => o.kind === "tag")],
+      ["想吃到的主料", SOFT.filter((o) => o.kind === "ing")],
+      ["这些别放", SOFT.filter((o) => o.kind === "avoid")]
+    ];
+    const picked = (state.soft || new Set()).size;
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='topbar'><button class='back' data-go='quiz' aria-label='返回'>‹</button>" +
+      "<h2 style='flex:1;font-size:19px'>还有什么讲究？</h2><span class='pill' id='softcount'>已选 " + picked + "</span></div>" +
+      "<p class='sub' style='margin:-10px 0 18px'>可以多选，也可以一个都不选。这些只影响排序，不会把菜筛没。</p>" +
+      "<div class='groups'>" + groups.map(([title, items]) =>
+        "<div><div class='group-title'>" + title + "<span class='n'>" + items.length + "</span></div>" +
+        "<div class='chips'>" + items.map((o) => {
+          const key = o.kind + ":" + o.v;
+          const on = (state.soft || new Set()).has(key);
+          return "<button class='chipbtn" + (on ? " sel" : "") + "' data-soft='" + key + "'>" + o.label + "</button>";
+        }).join("") + "</div></div>").join("") + "</div>" +
+      "<div class='soft-foot'><button class='btn primary block' data-go='result'>就这些，推荐食物 →</button></div></div>";
   }
 
   if (state.screen === "result") {
     if (!state.batch.length) {
-      v.innerHTML = "<button class='back' data-go='home'>‹ 返回</button><div class='empty'>筛得太狠了，一道都不剩。<br>回去放宽一个条件试试。</div>" +
-        "<button class='btn block' data-go='quiz' style='margin-top:20px'>改一下答案</button>";
+      v.innerHTML = "<div class='screen'><div class='topbar'><button class='back' data-go='home'>‹</button></div>" +
+        "<div class='empty'><span class='big-emoji'>🥲</span>筛得太狠了，一道都不剩。<br>回去放宽一个条件试试。</div>" +
+        "<button class='btn block' data-go='quiz'>改一下答案</button></div>";
     } else {
-      const nth = state.refresh > 1 ? "第 " + state.refresh + " 批 · 越往后越小众" : "按你的条件排的";
-      v.innerHTML = "<button class='back' data-go='quiz'>‹ 改答案</button>" +
-        "<h2>今天可以吃这些</h2>" + condChips() +
-        "<p class='sub' style='margin:10px 0 14px'>" + nth + "，点一道看做法。</p>" +
+      const tag = state.refresh > 1 ? "第 " + state.refresh + " 批" : "按条件排的";
+      v.innerHTML = "<div class='screen'>" +
+        "<div class='topbar'><button class='back' data-go='quiz' aria-label='改答案'>‹</button>" +
+        "<div class='result-head'><h2>今天可以吃这些</h2><span class='pill'>" + tag + "</span></div></div>" +
+        condChips() +
+        "<p class='result-sub'>点一道看做法，不满意就换一批——越往后越冷门。</p>" +
         "<div class='grid'>" + state.batch.map((d, i) => card(d, i)).join("") + "</div>" +
-        "<div style='margin-top:18px'><button class='btn primary block' data-go='one'>🎯 别挑了，帮我定一个</button></div>" +
-        "<div class='row'><button class='btn' data-go='refresh'>🎲 刷新换一批</button><button class='btn' data-go='quiz'>↺ 改答案</button></div>" +
-        "<p class='sub' style='text-align:center;margin:14px 0 0;font-size:12px'>越往后翻越冷门</p>";
+        "<p class='foot-note'>点过「不想吃」的不会再出现</p>" +
+        "<div class='sticky'><div class='inner'>" +
+        "<button class='btn' data-go='one'>🎯 帮我定一个</button>" +
+        "<button class='btn primary' data-go='refresh'>🎲 刷新换一批</button>" +
+        "</div></div></div>";
     }
   }
 
   if (state.screen === "pantry") {
     const quick = ["鸡蛋", "番茄", "土豆", "面条", "米饭", "豆腐", "猪肉末", "鸡腿", "大白菜", "黄瓜"];
-    v.innerHTML = "<button class='back' data-go='home'>‹ 返回</button>" +
-      "<h2>家里有什么？</h2><p class='sub' style='margin:-6px 0 14px'>用顿号或空格隔开，有几样写几样。</p>" +
-      "<input id='pantry' type='text' placeholder='例如：鸡蛋 番茄 面条' value='" + (state.pantryText || "") + "'>" +
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='topbar'><button class='back' data-go='home'>‹</button>" +
+      "<h2 style='flex:1;font-size:19px'>家里有什么？</h2></div>" +
+      "<p class='sub' style='margin:-10px 0 16px'>用顿号或空格隔开，有几样写几样，写多了更准。</p>" +
+      "<div class='search-box'><input id='pantry' type='text' placeholder='例如：鸡蛋 番茄 面条' value='" + (state.pantryText || "") + "'></div>" +
       "<div class='suggest'>" + quick.map((q) => "<button data-add='" + q + "'>+ " + q + "</button>").join("") + "</div>" +
-      "<button class='btn primary block' data-go='pantryResult' style='margin-top:8px'>看看能做什么</button>";
+      "<div class='soft-foot'><button class='btn primary block' data-go='pantryResult'>看看能做什么</button></div></div>";
   }
 
   if (state.screen === "pantryResult") {
     if (!state.batch.length) {
-      v.innerHTML = "<button class='back' data-go='pantry'>‹ 改食材</button><div class='empty'>库里暂时没有用这些食材的菜。<br>试试少写两样，或者换一个。</div>";
+      v.innerHTML = "<div class='screen'><div class='topbar'><button class='back' data-go='pantry'>‹</button></div>" +
+        "<div class='empty'><span class='big-emoji'>🍳</span>库里暂时没有用这些食材的菜。<br>试试少写两样，或者换一个。</div>" +
+        "<button class='btn block' data-go='pantry'>改一下食材</button></div>";
     } else {
-      v.innerHTML = "<button class='back' data-go='pantry'>‹ 改食材</button>" +
-        "<h2>这些能用上你的食材</h2><p class='sub' style='margin:-6px 0 14px'>按能用的食材数量排的序。</p>" +
+      v.innerHTML = "<div class='screen'>" +
+        "<div class='topbar'><button class='back' data-go='pantry' aria-label='改食材'>‹</button>" +
+        "<div class='result-head'><h2>这些能用上你的食材</h2></div></div>" +
+        "<p class='result-sub'>按能用的食材数量排序，用得上的越多越靠前。</p>" +
         "<div class='grid'>" + state.batch.map((d, i) => card(d, i)).join("") + "</div>" +
-        "<div style='margin-top:18px'><button class='btn primary block' data-go='one'>🎯 就做这个</button></div>" +
-        "<div class='row'><button class='btn' data-go='pantryRefresh'>🎲 换一批</button><button class='btn' data-go='pantry'>↺ 改食材</button></div>";
+        "<div class='sticky'><div class='inner'>" +
+        "<button class='btn' data-go='one'>🍳 就做这个</button>" +
+        "<button class='btn primary' data-go='pantryRefresh'>🎲 换一批</button>" +
+        "</div></div></div>";
     }
   }
 
   if (state.screen === "detail") {
     const d = DISHES.find((x) => x.id === state.current);
-    const hero = d.image
-      ? "<div class='hero' style='background:" + tint(d) + "'><span style='position:relative;z-index:0'>" + emojiOf(d) + "</span><img src='" + d.image + "' alt='' onerror='this.remove()'></div>"
-      : "<div class='hero' style='background:" + tint(d) + "'><span>" + emojiOf(d) + "</span></div>";
-    v.innerHTML = "<button class='back' data-go='back'>‹ 返回</button>" + hero +
-      "<h1 style='font-size:24px;margin-bottom:8px'>" + d.name + "</h1>" +
-      "<div class='meta' style='margin-bottom:16px'>" +
-        "<span class='chip'>" + d.diet + "</span><span class='chip'>" + d.taste + "</span>" +
-        "<span class='chip'>" + spicyWord[d.spicy] + "</span><span class='chip'>" + d.method + "</span>" +
-        "<span class='chip'>" + d.timeMin + " 分钟</span><span class='chip'>" + ["", "简单", "一般", "讲究"][d.difficulty] + "</span></div>" +
-      "<a class='btn primary block' href='" + SEARCH.img(d.name) + "' target='_blank' rel='noopener' style='margin-bottom:18px'>📷 看真实照片</a>" +
-      "<h2 style='font-size:16px'>做法</h2>" +
-      "<ol class='steps'>" + d.steps.map((s) => "<li>" + s + "</li>").join("") + "</ol>" +
-      (d.tips ? "<div class='tip'>💡 " + d.tips + "</div>" : "") +
-      "<div class='row'><a class='btn' href='" + SEARCH.recipes(d.name) + "' target='_blank' rel='noopener'>📖 找菜谱</a>" +
-      "<a class='btn' href='" + SEARCH.video(d.name) + "' target='_blank' rel='noopener'>▶ 看视频</a></div>" +
-      "<div class='row'><button class='btn block' data-dislike='" + d.id + "'>" + (state.disliked.has(d.id) ? "✓ 已标记不想吃" : "🙅 以后别再推这道") + "</button></div>";
+    const on = state.disliked.has(d.id);
+    const hero = "<div class='hero' style='background:" + tint(d) + "'>" +
+      "<span>" + emojiOf(d) + "</span>" +
+      (d.image ? "<img src='" + d.image + "' alt='' onerror='this.remove()'>" : "") +
+      "<a class='photo' href='" + SEARCH.img(d.name) + "' target='_blank' rel='noopener'>📷 看真实照片</a></div>";
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
+      "<span class='pill'>" + d.region + "菜</span><span class='pill'>大众度 " + d.popularity + "</span></div>" +
+      hero +
+      "<h1 style='font-size:25px;margin:0 0 12px'>" + d.name + "</h1>" +
+      "<div class='detail-meta'>" +
+      ["<span class='chip'>" + d.diet + "</span>", "<span class='chip'>" + d.taste + "</span>",
+       "<span class='chip'>" + spicyWord[d.spicy] + "</span>", "<span class='chip'>" + d.method + "</span>",
+       "<span class='chip'>" + d.timeMin + " 分钟</span>",
+       "<span class='chip'>" + ["", "简单", "一般", "讲究"][d.difficulty] + "</span>"].join("") + "</div>" +
+      "<h3 style='margin-bottom:10px'>做法</h3><div class='steps'>" +
+      d.steps.map((s, i) => "<div class='step'><span class='n'>" + (i + 1) + "</span><span class='txt'>" + s + "</span></div>").join("") +
+      "</div>" + (d.tips ? "<div class='tip'>💡 " + d.tips + "</div>" : "") +
+      "<button class='dislike" + (on ? " on" : "") + "' data-dislike='" + d.id + "'>" + (on ? "✓ 已标记不想吃，不会再推" : "🙅 以后别再推这道") + "</button>" +
+      "<div class='sticky'><div class='inner'>" +
+      "<a class='btn' href='" + SEARCH.recipes(d.name) + "' target='_blank' rel='noopener'>📖 找菜谱</a>" +
+      "<a class='btn primary' href='" + SEARCH.video(d.name) + "' target='_blank' rel='noopener'>▶ 看视频</a>" +
+      "</div></div></div>";
   }
   window.scrollTo(0, 0);
 }
@@ -345,7 +414,15 @@ document.addEventListener("click", (e) => {
   if (t.dataset.soft) {
     state.soft = state.soft || new Set();
     const k = t.dataset.soft;
-    if (state.soft.has(k)) state.soft.delete(k); else state.soft.add(k);
+    const on = !state.soft.has(k);
+    if (on) state.soft.add(k); else state.soft.delete(k);
+    // 原地切换，不整页重刷，避免一闪
+    if (t.classList && t.classList.toggle) {
+      t.classList.toggle("sel", on);
+      const c = $("#softcount");
+      if (c) c.textContent = "已选 " + state.soft.size;
+      return;
+    }
     return render();
   }
   if (t.dataset.ans !== undefined) {
@@ -374,8 +451,14 @@ document.addEventListener("click", (e) => {
   }
   if (t.dataset.dislike) {
     const id = t.dataset.dislike;
-    if (state.disliked.has(id)) state.disliked.delete(id); else state.disliked.add(id);
+    const on = !state.disliked.has(id);
+    if (on) state.disliked.add(id); else state.disliked.delete(id);
     localStorage.setItem("disliked", JSON.stringify([...state.disliked]));
+    if (t.classList && t.classList.toggle) {
+      t.classList.toggle("on", on);
+      t.textContent = on ? "✓ 已标记不想吃，不会再推" : "🙅 以后别再推这道";
+      return;
+    }
     return render();
   }
   const go = t.dataset.go;
