@@ -1,0 +1,14 @@
+{
+  "name": "whattoeat",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "validate": "node scripts/db.mjs",
+    "gaps": "node scripts/db.mjs",
+    "images": "node scripts/images.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "build": "node scripts/build-dist.mjs",
+    "start": "node server.mjs"
+  }
+}
