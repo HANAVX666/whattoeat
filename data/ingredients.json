@@ -816,5 +816,519 @@
     "name": "黄豆酱",
     "aliases": [],
     "group": "调味"
+  },
+  {
+    "name": "酸笋",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "米粉",
+    "aliases": [],
+    "group": "主食"
+  },
+  {
+    "name": "沙茶酱",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "牡蛎",
+    "aliases": [
+      "生蚝"
+    ],
+    "group": "海鲜"
+  },
+  {
+    "name": "蒜苔",
+    "aliases": [
+      "蒜薹"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "芹菜",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "鲫鱼",
+    "aliases": [],
+    "group": "海鲜"
+  },
+  {
+    "name": "吐司",
+    "aliases": [
+      "面包片"
+    ],
+    "group": "主食"
+  },
+  {
+    "name": "意大利面",
+    "aliases": [
+      "意面"
+    ],
+    "group": "主食"
+  },
+  {
+    "name": "海带",
+    "aliases": [
+      "海带丝"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "午餐肉",
+    "aliases": [],
+    "group": "肉"
+  },
+  {
+    "name": "辣椒油",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "外婆菜",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "肥肠",
+    "aliases": [
+      "大肠"
+    ],
+    "group": "肉"
+  },
+  {
+    "name": "雪菜",
+    "aliases": [
+      "雪里蕻"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "黄鱼",
+    "aliases": [
+      "小黄鱼"
+    ],
+    "group": "海鲜"
+  },
+  {
+    "name": "南瓜",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "油菜",
+    "aliases": [
+      "小油菜"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "油麦菜",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "腐竹",
+    "aliases": [],
+    "group": "豆制品"
+  },
+  {
+    "name": "海米",
+    "aliases": [
+      "虾米"
+    ],
+    "group": "海鲜"
+  },
+  {
+    "name": "杏鲍菇",
+    "aliases": [],
+    "group": "菌菇"
+  },
+  {
+    "name": "牛奶",
+    "aliases": [],
+    "group": "蛋奶"
+  },
+  {
+    "name": "黄油",
+    "aliases": [],
+    "group": "蛋奶"
+  },
+  {
+    "name": "沙拉酱",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "老抽",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "蟹",
+    "aliases": [
+      "梭子蟹",
+      "青蟹"
+    ],
+    "group": "海鲜"
+  },
+  {
+    "name": "牛蛙",
+    "aliases": [],
+    "group": "肉"
+  },
+  {
+    "name": "鱼腥草",
+    "aliases": [
+      "折耳根"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "香茅",
+    "aliases": [
+      "柠檬草"
+    ],
+    "group": "调味"
+  },
+  {
+    "name": "馍",
+    "aliases": [
+      "白吉馍",
+      "烧饼"
+    ],
+    "group": "主食"
+  },
+  {
+    "name": "粘米粉",
+    "aliases": [
+      "大米粉"
+    ],
+    "group": "主食"
+  },
+  {
+    "name": "香菜",
+    "aliases": [
+      "芫荽"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "燕皮",
+    "aliases": [],
+    "group": "肉"
+  },
+  {
+    "name": "笋干",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "猪大骨",
+    "aliases": [
+      "筒骨",
+      "大骨头"
+    ],
+    "group": "肉"
+  },
+  {
+    "name": "腊肉",
+    "aliases": [
+      "烟熏肉"
+    ],
+    "group": "肉"
+  },
+  {
+    "name": "青柠",
+    "aliases": [
+      "柠檬"
+    ],
+    "group": "水果"
+  },
+  {
+    "name": "海参",
+    "aliases": [],
+    "group": "海鲜"
+  },
+  {
+    "name": "鹌鹑蛋",
+    "aliases": [],
+    "group": "蛋奶"
+  },
+  {
+    "name": "鲤鱼",
+    "aliases": [],
+    "group": "海鲜"
+  },
+  {
+    "name": "猪腰",
+    "aliases": [
+      "猪腰子"
+    ],
+    "group": "肉"
+  },
+  {
+    "name": "烤麸",
+    "aliases": [],
+    "group": "豆制品"
+  },
+  {
+    "name": "鳝鱼",
+    "aliases": [
+      "黄鳝"
+    ],
+    "group": "海鲜"
+  },
+  {
+    "name": "叉烧酱",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "芥蓝",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "咸蛋黄",
+    "aliases": [],
+    "group": "蛋奶"
+  },
+  {
+    "name": "空心菜",
+    "aliases": [
+      "通菜"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "香干",
+    "aliases": [
+      "豆腐干"
+    ],
+    "group": "豆制品"
+  },
+  {
+    "name": "肥牛",
+    "aliases": [],
+    "group": "肉"
+  },
+  {
+    "name": "豆花",
+    "aliases": [
+      "豆腐脑"
+    ],
+    "group": "豆制品"
+  },
+  {
+    "name": "鱼丸",
+    "aliases": [],
+    "group": "海鲜"
+  },
+  {
+    "name": "年糕",
+    "aliases": [],
+    "group": "主食"
+  },
+  {
+    "name": "大米",
+    "aliases": [
+      "粳米"
+    ],
+    "group": "主食"
+  },
+  {
+    "name": "韭黄",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "面筋",
+    "aliases": [],
+    "group": "豆制品"
+  },
+  {
+    "name": "黄花菜",
+    "aliases": [
+      "金针菜"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "鱼片",
+    "aliases": [],
+    "group": "海鲜"
+  },
+  {
+    "name": "辣椒酱",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "蜂蜜",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "油条",
+    "aliases": [],
+    "group": "主食"
+  },
+  {
+    "name": "牛肉",
+    "aliases": [
+      "牛里脊肉"
+    ],
+    "group": "肉"
+  },
+  {
+    "name": "绿豆芽",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "莴笋",
+    "aliases": [
+      "青笋"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "苦瓜",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "蛤蜊",
+    "aliases": [
+      "花蛤",
+      "花甲"
+    ],
+    "group": "海鲜"
+  },
+  {
+    "name": "鱿鱼",
+    "aliases": [],
+    "group": "海鲜"
+  },
+  {
+    "name": "绿豆",
+    "aliases": [],
+    "group": "主食"
+  },
+  {
+    "name": "红豆",
+    "aliases": [
+      "赤小豆"
+    ],
+    "group": "主食"
+  },
+  {
+    "name": "猪肘",
+    "aliases": [
+      "肘子"
+    ],
+    "group": "肉"
+  },
+  {
+    "name": "糯米粉",
+    "aliases": [],
+    "group": "主食"
+  },
+  {
+    "name": "藤椒",
+    "aliases": [
+      "青花椒"
+    ],
+    "group": "调味"
+  },
+  {
+    "name": "红糖",
+    "aliases": [],
+    "group": "调味"
+  },
+  {
+    "name": "白萝卜",
+    "aliases": [
+      "萝卜"
+    ],
+    "group": "蔬菜"
+  },
+  {
+    "name": "羊杂",
+    "aliases": [],
+    "group": "肉"
+  },
+  {
+    "name": "馕",
+    "aliases": [],
+    "group": "主食"
+  },
+  {
+    "name": "芋头",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "菠萝",
+    "aliases": [],
+    "group": "水果"
+  },
+  {
+    "name": "春卷皮",
+    "aliases": [],
+    "group": "主食"
+  },
+  {
+    "name": "榨菜",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "咸鸭蛋",
+    "aliases": [],
+    "group": "蛋奶"
+  },
+  {
+    "name": "内酯",
+    "aliases": [
+      "葡萄糖酸内酯"
+    ],
+    "group": "调味"
+  },
+  {
+    "name": "毛豆",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "秋葵",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "金华火腿",
+    "aliases": [],
+    "group": "肉"
+  },
+  {
+    "name": "火腿",
+    "aliases": [],
+    "group": "肉"
+  },
+  {
+    "name": "葡萄干",
+    "aliases": [],
+    "group": "水果"
+  },
+  {
+    "name": "西葫芦",
+    "aliases": [
+      "角瓜"
+    ],
+    "group": "蔬菜"
   }
 ]
