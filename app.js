@@ -290,7 +290,10 @@ document.addEventListener("click", (e) => {
     const Q = qs[Math.min(state.qi, qs.length - 1)];
     state.answers[Q.id] = t.dataset.ans;
     const next = activeQs();
-    if (state.qi < next.length - 1) state.qi++;
+    // 答完最后一题直接进「还有什么讲究」，不再原地重复显示同一题
+    const nextUn = next.findIndex((q) => state.answers[q.id] === undefined);
+    if (nextUn === -1) { state.screen = "soft"; return render(); }
+    state.qi = nextUn;
     state.screen = "quiz";
     return render();
   }
