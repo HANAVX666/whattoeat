@@ -34,10 +34,19 @@ def fetch(url):
 
 
 def make_one(item):
-    dish_id, url = item
+    dish_id, urls = item
     dest = os.path.join(OUT, dish_id + ".webp")
+    raw = None
+    last = None
+    for url in urls:
+        try:
+            raw = fetch(url)
+            break
+        except Exception as exc:
+            last = exc
     try:
-        raw = fetch(url)
+        if raw is None:
+            raise last or RuntimeError("no url")
         from PIL import Image
         im = Image.open(io.BytesIO(raw))
         if im.mode not in ("RGB", "RGBA"):
@@ -73,7 +82,7 @@ def main():
             continue
         if not force and os.path.exists(os.path.join(OUT, dish_id + ".webp")):
             continue
-        todo.append((dish_id, arr[0]["u"]))
+        todo.append((dish_id, [x["u"] for x in arr][:3]))
     if limit:
         todo = todo[:limit]
     print("待处理", len(todo), "道")

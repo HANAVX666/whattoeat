@@ -43,3 +43,4 @@ test/.shots-tmp/
 .wl.mjs
 tmp-*
 .niche.mjs
+.newsheet.py

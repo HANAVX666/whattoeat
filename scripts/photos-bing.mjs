@@ -15,6 +15,8 @@ const num = (k, def) => { const a = args.find((x) => x.startsWith("--" + k + "="
 const LIMIT = num("limit", 200);
 const WORKERS = num("workers", 5);
 const ONLY = (args.find((a) => a.startsWith("--only=")) || "").split("=")[1];
+const RELAX = args.includes("--relax");
+const QOVERRIDE = (args.find((a) => a.startsWith("--q=")) || "").split("=")[1] || "";
 const TMP = path.join(ROOT, ".photos-tmp");
 fs.mkdirSync(TMP, { recursive: true });
 
@@ -94,7 +96,8 @@ async function candidates(d) {
   const keys = keysOf(d);
   const seen = new Set(), out = [];
   for (const first of [1, 36]) {
-    const url = "https://cn.bing.com/images/async?q=" + encodeURIComponent(d.name + " 做法 成品") + "&first=" + first + "&count=35&mmasync=1&qft=+filterui:imagesize-large";
+    const q = QOVERRIDE ? QOVERRIDE + " " + first : (RELAX ? d.name + " 成品" : d.name + " 做法 成品");
+    const url = "https://cn.bing.com/images/async?q=" + encodeURIComponent(q) + "&first=" + first + "&count=35&mmasync=1" + (RELAX ? "" : "&qft=+filterui:imagesize-large");
     const r = await getText(url);
     if (r.status !== 200) break;
     for (const it of parseBing(r.body)) {
@@ -148,10 +151,11 @@ async function handle(d) {
   for (const s of saved) {
     if (picks.length >= 3) break;
     const [w, h] = dmap[s.file] || [0, 0];
-    if (!w || w < 520) continue;
+    const minW = RELAX ? 420 : 520;
+    if (!w || w < minW) continue;
     const ratio = w / h;
-    if (ratio < 1.15 || ratio > 2.4) continue;
-    if (s.size < 15000) continue;
+    if (RELAX ? (ratio < 0.85 || ratio > 2.8) : (ratio < 1.15 || ratio > 2.4)) continue;
+    if (s.size < (RELAX ? 11000 : 15000)) continue;
     picks.push({ u: s.c.u, p: s.c.p, t: s.c.t.slice(0, 60) });
   }
   for (const s of saved) { try { fs.unlinkSync(s.file); } catch {} }
