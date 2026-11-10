@@ -271,7 +271,9 @@ function pick(reset) {
   const n = state.refresh || 0;
   const CEIL = [5.5, 5.5, 4.8, 4.2, 3.8, 3.4, 3.0, 2.6, 2.3];
   const ceil = CEIL[Math.min(n, CEIL.length - 1)];
-  let cand = rest.filter((d) => d.popularity <= ceil);
+  // 冰箱反推不玩「越刷越冷门」：手上就这些食材，优先给靠谱的家常做法
+  const nicheMode = !(state.answers.food && state.answers.food.length);
+  let cand = nicheMode ? rest.filter((d) => d.popularity <= ceil) : rest;
   if (cand.length < 30) cand = rest;
   const ranked = cand
     .map((d) => { const r = scoreOf(d, state.answers, state); return { d, s: r.s, why: r.why }; })
