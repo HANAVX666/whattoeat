@@ -16,3 +16,26 @@ preview.html
 .log2.txt
 .thumbs.log
 .tmp-*
+# 抓图 / 校验临时产物
+.bing.*
+.missing.*
+.photos-tmp*/
+.photos-*.log
+.pb*.txt
+.chk.txt
+.commit.txt
+.diag.*
+.verify.*
+.dl.*
+.gs.txt
+.thumb.out
+.sheet.*
+.srcs.*
+.ylb.*
+%SystemDrive%/
+test/.shots-tmp/
+.log*.txt
+.meal.*
+.verify-thumbs.json
+.verify.log
+.missing.json
