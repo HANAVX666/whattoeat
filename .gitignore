@@ -60,3 +60,4 @@ tmp-*
 .dbg.txt
 .cdp*.out.txt
 .srv*.txt
+.feat.txt

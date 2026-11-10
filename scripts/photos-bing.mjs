@@ -156,7 +156,7 @@ async function handle(d) {
     const ratio = w / h;
     if (RELAX ? (ratio < 0.85 || ratio > 2.8) : (ratio < 1.15 || ratio > 2.4)) continue;
     if (s.size < (RELAX ? 11000 : 15000)) continue;
-    picks.push({ u: s.c.u, p: s.c.p, t: s.c.t.slice(0, 60) });
+    picks.push({ u: s.c.u });
   }
   for (const s of saved) { try { fs.unlinkSync(s.file); } catch {} }
   if (picks.length) { PHOTOS[d.id] = picks; return { id: d.id, n: picks.length, cand: cands.length, t: picks[0].t.slice(0, 40) }; }

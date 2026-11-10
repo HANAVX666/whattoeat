@@ -7,6 +7,8 @@ const SEARCH = {
 
 let DISHES = [];
 let PHOTOS = {};
+let photosReady = false;
+let photosLoading = null;
 let THUMBS = new Set();
 const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), saved: new Set(), eaten: [], batch: [], reasons: new Map(), refresh: 0, pantryText: "" };
 
@@ -527,10 +529,12 @@ function render() {
     const sv = state.saved.has(d.id);
     const ate = daysSinceEaten(d.id) < 1;
     const ph = (PHOTOS[d.id] || [])[0];
+    // hero 用本地缩略图（秒开、离线也有图），点「更多图片」才去拉网络图
+    const heroSrc = THUMBS.has(d.id) ? "./data/thumbs/" + d.id + ".webp" : (ph && ph.u) || "";
     const hero = "<div class='hero' style='background:" + tint(d) + "'>" +
       "<span>" + emojiOf(d) + "</span>" +
-      (ph ? "<img class='cover' src='" + ph.u + "' alt='" + d.name + " 实物图'>" : "") +
-      "<button class='photo' data-photo='" + d.id + "'>" + (ph ? "📷 更多图片" : "🔍 网上搜图") + "</button></div>";
+      (heroSrc ? "<img class='cover' src='" + heroSrc + "' alt='" + d.name + " 实物图'>" : "") +
+      "<button class='photo' data-photo='" + d.id + "'>" + (heroSrc || !photosReady ? "📷 更多图片" : "🔍 网上搜图") + "</button></div>";
     v.innerHTML = "<div class='screen'>" +
       "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
       "<span class='pill'>" + d.region + "菜</span><span class='pill'>大众度 " + d.popularity + "</span>" +
@@ -579,6 +583,16 @@ function render() {
 let lbState = { id: null, i: 0 };
 const photoList = (id) => (PHOTOS[id] || []).map((x) => x.u).filter(Boolean);
 
+// 详情图（600KB+）不阻塞首屏：首屏只加载菜谱与本地缩略图，进详情页前再按需拉
+function ensurePhotos() {
+  if (photosLoading) return photosLoading;
+  photosLoading = fetch("./data/photos.json")
+    .then((r) => r.json())
+    .then((j) => { PHOTOS = j || {}; photosReady = true; return PHOTOS; })
+    .catch(() => { PHOTOS = {}; photosReady = true; return PHOTOS; });
+  return photosLoading;
+}
+
 function openPhoto(id, i) {
   const d = DISHES.find((x) => x.id === id);
   const list = photoList(id);
@@ -587,7 +601,8 @@ function openPhoto(id, i) {
   let box = $("#lightbox");
   if (!box) { box = document.createElement("div"); box.id = "lightbox"; box.className = "lightbox"; document.body.appendChild(box); }
   box.innerHTML = "<div class='lb-card'>" +
-    "<div class='lb-img'><img src='" + list[lbState.i] + "' alt='" + d.name + "'></div>" +
+    "<div class='lb-img'" + (THUMBS.has(d.id) ? " style='background:url(./data/thumbs/" + d.id + ".webp) center/contain no-repeat'" : "") + ">" +
+    "<img src='" + list[lbState.i] + "' alt='" + d.name + "' onerror=\"this.remove()\"></div>" +
     "<div class='lb-bar'><div class='lb-txt'><b>" + d.name + "</b><span>图片来自网络，仅供参考卖相</span></div>" +
     "<div class='lb-btns'>" + (list.length > 1 ? "<button class='btn sm' data-lb-next>换一张</button>" : "") +
     "<a class='btn sm' href='" + SEARCH.img(d.name) + "' target='_blank' rel='noopener'>搜更多</a>" +
@@ -711,8 +726,10 @@ document.addEventListener("click", (e) => {
   if (!t) return;
   if (t.dataset.photo) {
     const id = t.dataset.photo;
-    if (photoList(id).length) openPhoto(id, 0);
-    else { const d = DISHES.find((x) => x.id === id); window.open(SEARCH.img(d ? d.name : ""), "_blank"); }
+    const openWeb = () => { const d = DISHES.find((x) => x.id === id); window.open(SEARCH.img(d ? d.name : ""), "_blank"); };
+    if (photoList(id).length) { openPhoto(id, 0); return; }
+    if (!photosReady) { ensurePhotos().then(() => { if (photoList(id).length) openPhoto(id, 0); else openWeb(); }); return; }
+    openWeb();
     return;
   }
   if (t.dataset.soft) {
@@ -834,7 +851,6 @@ document.addEventListener("keydown", (e) => {
     const idx = await (await fetch("./data/index.json")).json();
     const lists = await Promise.all(idx.files.map((f) => fetch("./data/dishes/" + f).then((r) => r.json())));
     DISHES = lists.flat();
-    try { PHOTOS = await (await fetch("./data/photos.json")).json(); } catch (e) { PHOTOS = {}; }
     try { THUMBS = new Set(await (await fetch("./data/thumbs.json")).json()); } catch (e) { THUMBS = new Set(); }
   } catch (err) {
     $("#app").innerHTML = "<div class='empty'>菜谱库加载失败。<br>请用本地服务器打开。</div>";
