@@ -1,4 +1,4 @@
-const VERSION = "v311-dishes";
+const VERSION = "v313-fixbar";
 const CACHE = "eat-" + VERSION;
 const SHELL = [
   "./", "./index.html", "./app.js", "./style.css",
