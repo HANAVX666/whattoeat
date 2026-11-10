@@ -354,7 +354,10 @@ function isStandalone() {
 }
 
 function installTip() {
-  if (typeof window === "undefined" || isStandalone()) return "";
+  if (typeof window === "undefined") return "";
+  // 装进去的 APK 里不提示“加到主屏幕”
+  const inApp = !!window.Capacitor || /;\s*wv\)/.test((typeof navigator !== "undefined" && navigator.userAgent) || "");
+  if (inApp || isStandalone()) return "";
   let hidden = false;
   try { hidden = localStorage.getItem("hideInstall") === "1"; } catch (e) {}
   if (hidden) return "";
