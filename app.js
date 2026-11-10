@@ -82,6 +82,7 @@ const AVOID_GROUPS = {
   "豆制品": ["豆腐", "豆干", "香干", "腐竹", "豆皮", "豆花", "烤麸", "面筋"]
 };
 const FORM_WORD = { "菜": "炒菜炖菜配米饭", "汤羹": "汤和羹", "主食": "面饭饺子", "小吃": "凉菜小吃" };
+const MEAL_TITLE = { breakfast: "早饭可以吃这些", lunch: "午饭可以吃这些", dinner: "晚饭可以吃这些", night: "宵夜可以吃这些" };
 const SOFT_MAP = Object.fromEntries(SOFT.map((o) => [o.kind + ":" + o.v, o.label]));
 
 const FOOD_GROUPS = {
@@ -359,6 +360,25 @@ function recentStrip() {
     "<div class='chips'>" + items.map((d) => "<button class='chipbtn' data-id='" + d.id + "'>" + d.name + "</button>").join("") + "</div></div>";
 }
 
+function similarDishes(d, n) {
+  const scored = DISHES.filter((x) => x.id !== d.id && !state.disliked.has(x.id)).map((x) => {
+    let sc = 0;
+    if (x.region === d.region) sc += 8;
+    if (x.form === d.form) sc += 3;
+    if (x.mainIngredients.some((i) => d.mainIngredients.includes(i))) sc += 5;
+    sc -= Math.abs(x.popularity - d.popularity) * 2;
+    return [x, sc];
+  }).sort((a, b) => b[1] - a[1]);
+  return scored.slice(0, n).map((x) => x[0]);
+}
+
+function nearHtml(d) {
+  const near = similarDishes(d, 4);
+  if (!near.length) return "";
+  return "<h3 style='margin:22px 0 10px'>也可以试试</h3><div class='near'>" +
+    near.map((x) => "<button class='chipbtn' data-id='" + x.id + "'>" + x.name + "</button>").join("") + "</div>";
+}
+
 function card(d, i) {
   const why = ((state.reasons && state.reasons.get(d.id)) || [])[0];
   const on = state.saved.has(d.id);
@@ -447,7 +467,7 @@ function render() {
       const tag = state.refresh > 1 ? "第 " + state.refresh + " 批" : "按条件排的";
       v.innerHTML = "<div class='screen'>" +
         "<div class='topbar'><button class='back' data-go='quiz' aria-label='改答案'>‹</button>" +
-        "<div class='result-head'><h2>今天可以吃这些</h2><span class='pill'>" + tag + "</span></div></div>" +
+        "<div class='result-head'><h2>" + (MEAL_TITLE[state.answers.meal] || "今天可以吃这些") + "</h2><span class='pill'>" + tag + "</span></div></div>" +
         condChips() +
         "<p class='result-sub'>点一道看做法，不满意就换一批——越往后越冷门。</p>" +
         "<div class='grid'>" + state.batch.map((d, i) => card(d, i)).join("") + "</div>" +
@@ -529,6 +549,7 @@ function render() {
       "<button class='btn" + (ate ? " done" : "") + "' data-eat='" + d.id + "'" + (ate ? " disabled" : "") + ">" +
       (ate ? "✓ 今天吃过了" : "🍽 吃过了") + "</button></div>" +
       "<button class='dislike" + (no ? " on" : "") + "' data-dislike='" + d.id + "'>" + (no ? "✓ 已标记不想吃，不会再推" : "🙅 以后别再推这道") + "</button>" +
+      nearHtml(d) +
       "<div class='sticky'><div class='inner'>" +
       "<a class='btn' href='" + SEARCH.recipes(d.name) + "' target='_blank' rel='noopener'>📖 找菜谱</a>" +
       "<a class='btn primary' href='" + SEARCH.video(d.name) + "' target='_blank' rel='noopener'>▶ 看视频</a>" +

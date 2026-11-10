@@ -341,3 +341,6 @@ input[type=text]:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 4px
 .wheel-btns .btn{flex:1}
 .btn[disabled]{opacity:.45}
 @media (max-height:700px){.wheel-stage{width:min(220px,60vw)}.wheel-label>span{font-size:11px;margin-top:10px}.wheel-title{font-size:16px}}
+
+/* 详情页「也可以试试」（v320） */
+.near { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
