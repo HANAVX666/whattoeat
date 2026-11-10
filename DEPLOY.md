@@ -202,3 +202,13 @@ git push
 | Capacitor 打包 | 把 `index.html / app.js / style.css / data` 放进 Capacitor 工程，生成 apk / ipa | 想上架应用商店 |
 
 iOS 的 `.ipa` 需要苹果开发者账号（99 美元/年）或自签工具，个人用「添加到主屏幕」就够了。
+
+
+## 安卓安装包（APK）
+
+推代码到 main 后，GitHub Actions 会自动编译一个**离线可用**的安卓安装包（网页资源全部打进包里，装上不联网也能用，不受域名被墙影响）。
+
+- 打开仓库 → Actions → 左侧「打安卓离线包」→ 最近一次运行 → 页面底部 Artifacts 里下载 `eatwha-apk`
+- 或者直接下载固定链接：https://github.com/HANAVX666/whattoeat/releases/download/apk/eatwha.apk
+- 手机安装：把 eatwha.apk 传到安卓手机 → 用文件管理打开 → 允许「安装未知应用」→ 继续安装
+- 这是 debug 签名的包，适合自己发朋友用；要上架 Google Play 需要另外配置正式签名

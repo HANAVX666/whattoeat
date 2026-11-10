@@ -1,0 +1,12 @@
+{
+  "appId": "com.hanavx.whattoeat",
+  "appName": "吃什么",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#fbf8f3"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

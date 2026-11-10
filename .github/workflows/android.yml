@@ -1,0 +1,74 @@
+name: 打安卓离线包
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "app.js"
+      - "style.css"
+      - "index.html"
+      - "package.json"
+      - "capacitor.config.json"
+      - "data/**"
+      - "scripts/**"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: 装依赖并构建网页产物
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: 生成安卓工程
+        run: |
+          npm install --no-audit --no-fund @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npx cap add android
+          npx cap sync android
+
+      - name: 编译 APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: 收集产物
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk out/eatwha.apk
+          ls -lh out/eatwha.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eatwha-apk
+          path: out/eatwha.apk
+          if-no-files-found: error
+
+      - name: 覆盖旧版本 release（固定下载链接）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete apk --yes --cleanup-tag || true
+          gh release create apk out/eatwha.apk \
+            --title "安卓安装包（最新）" \
+            --notes "下载 eatwha.apk，传到安卓手机点开安装即可。离线可用，不需要联网。" \
+            --latest
