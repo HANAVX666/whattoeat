@@ -214,7 +214,13 @@ function pick(reset) {
   if (pool.every((d) => state.shown.has(d.id))) { state.shown = new Set(); state.refresh = 0; }
 
   const rest = pool.filter((d) => !state.shown.has(d.id));
-  const ranked = rest
+  // 越往后越冷门：第 n 批开始收紧「大众度上限」，池子不够 30 道就放开，避免没菜可推
+  const n = state.refresh || 0;
+  const CEIL = [5.5, 5.5, 4.8, 4.2, 3.8, 3.4, 3.0, 2.6, 2.3];
+  const ceil = CEIL[Math.min(n, CEIL.length - 1)];
+  let cand = rest.filter((d) => d.popularity <= ceil);
+  if (cand.length < 30) cand = rest;
+  const ranked = cand
     .map((d) => { const r = scoreOf(d, state.answers, state); return { d, s: r.s, why: r.why }; })
     .sort((x, y) => y.s - x.s);
 

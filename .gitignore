@@ -42,3 +42,4 @@ test/.shots-tmp/
 .wv.mjs
 .wl.mjs
 tmp-*
+.niche.mjs
