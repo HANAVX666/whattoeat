@@ -13,10 +13,12 @@ const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new 
 const QUESTIONS = [
   { id: "src", q: "今天自己做，还是点外卖？", opts: [["自己动手做", "cook"], ["点外卖 / 出去吃", "out"], ["都行", "any"]] },
   { id: "meal", q: "这是今天的哪一顿？", opts: [["早饭", "breakfast"], ["午饭", "lunch"], ["晚饭", "dinner"], ["宵夜", "night"], ["都行", "any"]] },
-  { id: "route", q: "想吃哪个路子的菜？", opts: [["家常菜就行", "家常"], ["川湘：香辣下饭", "川湘"], ["粤苏浙：清淡鲜", "粤苏浙"], ["都行", "any"]] },
+  { id: "route", q: "想吃哪个路子的菜？", opts: [["家常菜就行", "家常"], ["川湘：香辣下饭", "川湘"], ["粤闽：鲜甜本味", "粤闽"], ["江浙：清淡鲜嫩", "江浙"], ["西北：面食扎实", "西北"], ["都行", "any"]] },
   { id: "diet", q: "想吃荤的还是素的？", opts: [["想吃肉", "荤"], ["想吃素", "素"], ["都行，不挑", "any"]] },
   { id: "taste", q: "口味想清淡点还是够味？", opts: [["清淡一点", "清淡"], ["家常就行", "适中"], ["要够味", "重口"], ["都行", "any"]] },
   { id: "spicy", q: "吃辣吗？", opts: [["不吃辣", "0"], ["能吃点辣", "2"], ["越辣越好", "4"], ["都行", "any"]] },
+  { id: "temp", q: "想吃热乎的，还是凉快的？", opts: [["热乎的，最好带汤", "hot"], ["凉快的，爽口解腻", "cold"], ["都行", "any"]] },
+  { id: "novelty", q: "想吃常吃的，还是换换口味？", opts: [["就吃熟悉的", "familiar"], ["来点没试过的", "novel"], ["都行", "any"]] },
   { id: "form", q: "想吃哪一类？", opts: [["炒菜炖菜，配米饭", "菜"], ["汤和羹", "汤羹"], ["面、饭、饺子这类", "主食"], ["凉菜、小吃、卤味", "小吃"], ["都行", "any"]] },
   { id: "time", q: "能花多少时间？", when: (a) => a.src !== "out", opts: [["十分钟内", "10"], ["半小时左右", "30"], ["不着急", "999"], ["都行", "any"]] },
   { id: "equip", q: "厨房有什么家伙什？", when: (a) => a.src === "cook", opts: [["只有一口锅", "basic"], ["有烤箱或空气炸锅", "oven"], ["锅碗瓢盆都有", "any"]] }
@@ -37,6 +39,8 @@ const SOFT = [
   { label: "当早餐", kind: "tag", v: "早餐" },
   { label: "当宵夜", kind: "tag", v: "宵夜" },
   { label: "热乎暖胃", kind: "tag", v: "暖心" },
+  { label: "想吃凉的", kind: "method", v: "凉拌" },
+  { label: "想吃卤味", kind: "method", v: "卤" },
   { label: "鸡肉", kind: "ing", v: "鸡肉" },
   { label: "猪肉", kind: "ing", v: "猪肉" },
   { label: "牛肉", kind: "ing", v: "牛肉" },
@@ -52,15 +56,30 @@ const SOFT = [
   { label: "别放香菜", kind: "avoid", v: "香菜" },
   { label: "不吃海鲜", kind: "avoid", v: "海鲜" },
   { label: "不吃牛羊", kind: "avoid", v: "牛羊" },
-  { label: "不吃内脏", kind: "avoid", v: "内脏" }
+  { label: "不吃内脏", kind: "avoid", v: "内脏" },
+  { label: "不吃猪肉", kind: "avoid", v: "猪肉" },
+  { label: "不吃鸡蛋", kind: "avoid", v: "鸡蛋" },
+  { label: "不吃菌菇", kind: "avoid", v: "菌菇" },
+  { label: "不吃豆制品", kind: "avoid", v: "豆制品" }
 ];
 
-const ROUTE = { "家常": ["家常"], "川湘": ["川", "湘"], "粤苏浙": ["粤", "苏", "浙"] };
+const ROUTE = {
+  "家常": ["家常"],
+  "川湘": ["川", "湘"],
+  "粤闽": ["粤", "闽"],
+  "江浙": ["苏", "浙", "徽"],
+  "西北": ["西北", "新疆"]
+};
+const ROUTE_WORD = { "家常": "家常味道", "川湘": "川湘香辣", "粤闽": "粤闽鲜甜", "江浙": "江浙清鲜", "西北": "西北面食" };
 const AVOID_GROUPS = {
   "香菜": ["香菜"],
   "海鲜": ["鱼", "虾", "蟹", "贝", "鱿鱼", "海带", "蛤", "蚝"],
   "牛羊": ["羊", "牛"],
-  "内脏": ["肥肠", "大肠", "毛肚", "肝", "腰", "肚丝"]
+  "内脏": ["肥肠", "大肠", "毛肚", "肝", "腰", "肚丝"],
+  "猪肉": ["猪", "五花", "排骨", "火腿", "香肠", "腊肉", "培根"],
+  "鸡蛋": ["鸡蛋", "蛋清", "鸭蛋", "咸蛋", "皮蛋"],
+  "菌菇": ["香菇", "平菇", "杏鲍菇", "金针菇", "蘑菇", "木耳", "银耳"],
+  "豆制品": ["豆腐", "豆干", "香干", "腐竹", "豆皮", "豆花", "烤麸", "面筋"]
 };
 const FORM_WORD = { "菜": "炒菜炖菜配米饭", "汤羹": "汤和羹", "主食": "面饭饺子", "小吃": "凉菜小吃" };
 const SOFT_MAP = Object.fromEntries(SOFT.map((o) => [o.kind + ":" + o.v, o.label]));
@@ -130,7 +149,7 @@ function scoreOf(d, a, ctx) {
     else if (a.people === "party" && d.tags.includes("宴客")) { s += 14; why.push("端得上桌"); }
   }
   if (a.route && a.route !== "any" && (ROUTE[a.route] || []).includes(d.region)) {
-    s += 18; why.push(a.route === "川湘" ? "川湘口味" : a.route === "粤苏浙" ? "清淡鲜香" : "家常味道");
+    s += 18; why.push(ROUTE_WORD[a.route] || "合口味");
   }
   if (a.taste && a.taste !== "any" && d.taste === a.taste) {
     s += 16; why.push(a.taste === "清淡" ? "清淡不腻" : a.taste === "重口" ? "够味过瘾" : "家常口味");
@@ -146,6 +165,21 @@ function scoreOf(d, a, ctx) {
     if (cap >= 4) { s += d.spicy * 4; if (d.spicy >= 3) why.push("够辣"); }
     else if (cap === 2) { s += 8 - Math.abs(d.spicy - 2) * 3; if (d.spicy === 2) why.push("辣度刚好"); }
     else { s += 8; }
+  }
+
+  if (a.temp === "hot") {
+    if (d.tags.includes("汤水") || d.tags.includes("暖心") || d.method === "炖煮" || d.method === "蒸") {
+      s += 16; why.push("热乎带汤");
+    } else if (d.method === "凉拌") s -= 14;
+  } else if (a.temp === "cold") {
+    if (d.method === "凉拌") { s += 22; why.push("凉口爽脆"); }
+    else if (d.form === "汤羹") s -= 12;
+  }
+
+  if (a.novelty === "familiar") {
+    if (d.popularity >= 4) { s += 12; why.push("常吃的稳妥"); } else s -= 4;
+  } else if (a.novelty === "novel") {
+    if (d.popularity <= 3) { s += 14; why.push("没试过的新口味"); } else s -= 6;
   }
 
   if (a.time && a.time !== "any") {
@@ -178,6 +212,7 @@ function scoreOf(d, a, ctx) {
     const kind = k.slice(0, i), v = k.slice(i + 1);
     if (kind === "tag" && d.tags.includes(v)) { s += 13; softHit++; why.push(SOFT_MAP[k] || v); }
     else if (kind === "ing" && d.mainIngredients.some((x) => (FOOD_GROUPS[v] || []).includes(x))) { s += 15; softHit++; why.push("有" + v); }
+    else if (kind === "method" && d.method === v) { s += 16; softHit++; why.push(v === "凉拌" ? "凉拌爽口" : "卤得入味"); }
   }
 
   if (a.food && a.food.length) {
@@ -263,7 +298,11 @@ function condChips() {
   if (a.people === "2") c.push("两个人");
   if (a.people === "family") c.push("一家人");
   if (a.people === "party") c.push("请客");
-  if (a.route && a.route !== "any") c.push(a.route === "川湘" ? "川湘口味" : a.route === "粤苏浙" ? "粤苏浙口味" : "家常菜");
+  if (a.route && a.route !== "any") c.push(ROUTE_WORD[a.route] || "家常菜");
+  if (a.temp === "hot") c.push("想吃热乎的");
+  if (a.temp === "cold") c.push("想吃凉的");
+  if (a.novelty === "familiar") c.push("吃熟悉的");
+  if (a.novelty === "novel") c.push("想尝鲜");
   if (a.taste && a.taste !== "any") c.push(a.taste === "清淡" ? "口味清淡" : a.taste === "重口" ? "要够味" : "家常口味");
   if (a.form && a.form !== "any") c.push(FORM_WORD[a.form]);
   if (a.method && a.method !== "any") c.push(a.method);
@@ -363,7 +402,7 @@ function render() {
 
   if (state.screen === "soft") {
     const groups = [
-      ["今天就想吃", SOFT.filter((o) => o.kind === "tag")],
+      ["今天就想吃", SOFT.filter((o) => o.kind === "tag" || o.kind === "method")],
       ["想吃到的主料", SOFT.filter((o) => o.kind === "ing")],
       ["这些别放", SOFT.filter((o) => o.kind === "avoid")]
     ];
