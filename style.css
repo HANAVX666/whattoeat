@@ -344,3 +344,22 @@ input[type=text]:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 4px
 
 /* 详情页「也可以试试」（v320） */
 .near { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+
+/* 安装到主屏幕提示（v324-app） */
+.install{
+  display:flex;align-items:center;gap:10px;margin-top:16px;padding:12px 12px 12px 14px;
+  border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,#fffdfa,#fdf6ef);
+  box-shadow:var(--sh-1);font-size:13px;line-height:1.45;color:var(--ink2);position:relative;
+}
+.install .ins-ico{font-size:20px;flex:0 0 auto}
+.install .ins-txt{flex:1;min-width:0}
+.install .ins-txt b{font-weight:600;color:var(--red-deep)}
+.install .ins-go{
+  flex:0 0 auto;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-weight:600;
+  background:var(--red);color:#fff;cursor:pointer;
+}
+.install .ins-x{
+  flex:0 0 auto;width:26px;height:26px;border:0;border-radius:50%;background:transparent;
+  color:var(--muted);font-size:18px;line-height:1;cursor:pointer;
+}
+@media (display-mode: standalone){ .install{display:none} }

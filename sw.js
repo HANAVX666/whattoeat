@@ -1,4 +1,4 @@
-const VERSION = "v323-why";
+const VERSION = "v324-app";
 const CACHE = "eat-" + VERSION;
 const IMG_CACHE = "eat-img-v1";
 const SHELL = [

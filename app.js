@@ -337,6 +337,38 @@ function condChips() {
   return "<div class='conds'>" + c.map((x) => "<span>" + x + "</span>").join("") + "</div>";
 }
 
+let deferredPrompt = null;
+if (typeof window !== "undefined" && window.addEventListener) {
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (state.screen === "home") render();
+  });
+}
+
+function isStandalone() {
+  try {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone === true;
+  } catch (e) { return false; }
+}
+
+function installTip() {
+  if (typeof window === "undefined" || isStandalone()) return "";
+  let hidden = false;
+  try { hidden = localStorage.getItem("hideInstall") === "1"; } catch (e) {}
+  if (hidden) return "";
+  const ua = (typeof navigator !== "undefined" && navigator.userAgent) || "";
+  const ios = /iPad|iPhone|iPod/.test(ua);
+  if (!ios && !deferredPrompt) return "";
+  if (ios) {
+    return "<div class='install'><span class='ins-ico'>📲</span><span class='ins-txt'>装到主屏幕更像 App：点底部「分享」→「添加到主屏幕」，以后一按就开，没网也能用。</span>" +
+      "<button class='ins-x' data-install-hide aria-label='不再提示'>×</button></div>";
+  }
+  return "<div class='install'><span class='ins-ico'>📲</span><span class='ins-txt'>装到桌面，像 App 一样打开，没网也能用。</span>" +
+    "<button class='ins-go' data-install>安装</button><button class='ins-x' data-install-hide aria-label='不再提示'>×</button></div>";
+}
+
 function thumb(d) {
   const ph = (PHOTOS[d.id] || [])[0];
   // 卡片优先用本地 webp 缩略图（约 18KB），没有就退回网络原图
@@ -416,6 +448,7 @@ function render() {
       bigBtn("c", "🎯", "直接来一批", "不问条件，随便抽几道", "spin") +
       recentStrip() +
       (state.saved.size ? "<button class='home-link' data-go='saved'>★ 我的收藏<span>" + state.saved.size + " 道</span>›</button>" : "") +
+      installTip() +
       "<p class='foot-note'>菜库 " + DISHES.length + " 道 · 点过「不想吃」的不会再出现</p>" +
     "</div>";
   }
@@ -716,6 +749,17 @@ document.addEventListener("click", (e) => {
       state.current = d.id; state.from = state.screen; state.screen = "detail";
       return render();
     }
+  }
+  const insBtn = e.target.closest("[data-install],[data-install-hide]");
+  if (insBtn && insBtn.dataset && (insBtn.dataset.install !== undefined || insBtn.dataset.installHide !== undefined)) {
+    if (insBtn.dataset.installHide !== undefined) {
+      try { localStorage.setItem("hideInstall", "1"); } catch (err) {}
+    } else if (deferredPrompt) {
+      const p = deferredPrompt;
+      deferredPrompt = null;
+      try { p.prompt(); } catch (err) {}
+    }
+    return render();
   }
   if (e.target.id === "lightbox") { closePhoto(); return; }
   const lb = e.target.closest("[data-lb-close],[data-lb-next]");

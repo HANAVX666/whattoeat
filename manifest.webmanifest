@@ -27,5 +27,31 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "id": "./",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "categories": [
+    "food",
+    "lifestyle"
+  ],
+  "description": "按口味挑菜、用冰箱食材反推做法，1020 道家常菜，离线可用。",
+  "screenshots": [
+    {
+      "src": "./screenshot-result.png",
+      "sizes": "540x1169",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "按条件挑菜"
+    },
+    {
+      "src": "./screenshot-detail.png",
+      "sizes": "540x1169",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "菜谱详情"
+    }
   ]
 }
