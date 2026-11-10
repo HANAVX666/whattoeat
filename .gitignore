@@ -61,3 +61,4 @@ tmp-*
 .cdp*.out.txt
 .srv*.txt
 .feat.txt
+.names-dump.txt
