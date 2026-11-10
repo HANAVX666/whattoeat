@@ -384,7 +384,9 @@ function nearHtml(d) {
 }
 
 function card(d, i) {
-  const why = ((state.reasons && state.reasons.get(d.id)) || [])[0];
+  const rs = (state.reasons && state.reasons.get(d.id)) || [];
+  const pick = rs.filter((r) => !r.startsWith("正好是")).slice(0, 2);
+  const why = (pick.length ? pick : rs.slice(0, 1)).join(" · ");
   const on = state.saved.has(d.id);
   return "<div class='dish' data-id='" + d.id + "' style='--i:" + (i || 0) + "'>" +
     "<button class='star" + (on ? " on" : "") + "' data-save='" + d.id + "' aria-label='收藏'>" + (on ? "★" : "☆") + "</button>" +
