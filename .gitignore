@@ -64,3 +64,4 @@ tmp-*
 .names-dump.txt
 .ghproxy.cjs
 .lsr.txt
+apk/
