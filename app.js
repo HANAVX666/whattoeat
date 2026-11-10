@@ -136,6 +136,23 @@ const spicyWord = ["不辣", "微辣", "中辣", "麻辣", "爆辣"];
 const BATCH = 6;   // 一次给 6 道：手机上两列三行，一屏看完，不至于挑花眼
 
 // 每道菜算一个匹配分，同时记下「为什么推荐它」
+const SEASONING = new Set(["姜", "大蒜", "小葱", "大葱", "生抽", "老抽", "香醋", "白糖", "冰糖", "花椒", "干辣椒",
+  "小米椒", "玉米淀粉", "料酒", "豆瓣酱", "辣椒油", "八角", "桂皮", "香油", "盐", "蚝油", "胡椒粉", "孜然",
+  "辣椒粉", "番茄酱", "芝麻", "香菜", "辣椒", "淀粉", "蒜", "葱"]);
+const DEDUP_GROUPS = ["鸡肉", "猪肉", "牛肉", "羊肉", "鸭肉", "鱼虾", "海鲜", "鸡蛋", "菌菇", "豆制品"];
+const topIngredients = (n) => {
+  const f = new Map();
+  for (const d of DISHES) for (const x of d.mainIngredients) if (!SEASONING.has(x)) f.set(x, (f.get(x) || 0) + 1);
+  const used = new Set(), out = [];
+  for (const [name] of [...f.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))) {
+    const grp = DEDUP_GROUPS.find((g) => (FOOD_GROUPS[g] || []).includes(name));
+    if (grp) { if (used.has(grp)) continue; used.add(grp); }
+    out.push(name);
+    if (out.length >= n) break;
+  }
+  return out;
+};
+
 function scoreOf(d, a, ctx) {
   let s = (d.popularity - 3) * 6;          // 大众度只值 0~12 分，不再主导排序
   const days = daysSinceEaten(d.id);
@@ -443,7 +460,7 @@ function render() {
   }
 
   if (state.screen === "pantry") {
-    const quick = ["鸡蛋", "番茄", "土豆", "面条", "米饭", "豆腐", "猪肉末", "鸡腿", "大白菜", "黄瓜"];
+    const quick = topIngredients(24);
     v.innerHTML = "<div class='screen'>" +
       "<div class='topbar'><button class='back' data-go='home'>‹</button>" +
       "<h2 style='flex:1;font-size:19px'>家里有什么？</h2></div>" +

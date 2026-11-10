@@ -1,4 +1,4 @@
-const VERSION = "v318-ask2";
+const VERSION = "v319-pantry";
 const CACHE = "eat-" + VERSION;
 const IMG_CACHE = "eat-img-v1";
 const SHELL = [
