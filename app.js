@@ -6,7 +6,7 @@ const SEARCH = {
 };
 
 let DISHES = [];
-const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), batch: [], reasons: new Map(), refresh: 0, pantryText: "" };
+const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), saved: new Set(), eaten: [], batch: [], reasons: new Map(), refresh: 0, pantryText: "" };
 
 const QUESTIONS = [
   { id: "src", q: "今天自己做，还是点外卖？", opts: [["自己动手做", "cook"], ["点外卖 / 出去吃", "out"], ["都行", "any"]] },
@@ -86,7 +86,10 @@ const EMOJI = [["蛋","🥚"],["鸡翅","🍗"],["鸡腿","🍗"],["鸡","🍗"]
   ["羊","🍖"],["猪","🥓"],["鱼","🐟"],["虾","🦐"],["蟹","🦀"],["蛤","🦪"],["鱿","🦑"],
   ["豆腐","🍲"],["番茄","🍅"],["黄瓜","🥒"],["茄子","🍆"],["土豆","🥔"],["白菜","🥬"],["菜","🥬"],
   ["饺","🥟"],["面","🍜"],["粉","🍜"],["米线","🍜"],["饭","🍚"],["粥","🥣"],["饼","🥞"],["馍","🥖"],
-  ["汤","🥣"],["花生","🥜"],["菇","🍄"],["玉米","🌽"],["南瓜","🎃"]];
+  ["汤","🥣"],["花生","🥜"],["菇","🍄"],["玉米","🌽"],["南瓜","🎃"],["奶","🥛"],["吐司","🍞"],
+  ["毛豆","🫘"],["红豆","🫘"],["绿豆","🫘"],["黄豆","🫘"],["五花","🥓"],["腊肉","🥓"],
+  ["木耳","🍄"],["银耳","🍄"],["椒","🌶"],["海带","🌿"],["红薯","🍠"],["大肠","🍖"],["肥肠","🍖"],["肠","🌭"],
+  ["藕","🪷"],["笋","🎍"],["魔芋","🍢"],["苦瓜","🥒"]];
 const emojiOf = (d) => {
   // 菜名里出现得越靠前，越可能是主角：番茄炒蛋 → 🍅 而不是 🥚
   let best = null, at = 1e9;
@@ -115,6 +118,8 @@ const BATCH = 6;   // 一次给 6 道：手机上两列三行，一屏看完，�
 // 每道菜算一个匹配分，同时记下「为什么推荐它」
 function scoreOf(d, a, ctx) {
   let s = (d.popularity - 3) * 6;          // 大众度只值 0~12 分，不再主导排序
+  const days = daysSinceEaten(d.id);
+  if (days < 3) s -= 45 * (1 - days / 3);   // 三天内吃过：越近越不想再推荐
   const why = [];
 
   if (a.form && a.form !== "any" && d.form === a.form) { s += 22; why.push("正好是" + FORM_WORD[a.form]); }
@@ -255,9 +260,29 @@ function thumb(d) {
   return "<div class='thumb' style='background:" + tint(d) + "'><span>" + emojiOf(d) + "</span>" + img + "</div>";
 }
 
+function daysSinceEaten(id) {
+  const e = (state.eaten || []).find((x) => x.id === id);
+  return e ? (Date.now() - e.ts) / 86400000 : 999;
+}
+
+function markEaten(id) {
+  state.eaten = [{ id, ts: Date.now() }].concat((state.eaten || []).filter((x) => x.id !== id)).slice(0, 40);
+  localStorage.setItem("eaten", JSON.stringify(state.eaten));
+}
+
+function recentStrip() {
+  const items = (state.eaten || []).slice(0, 8).map((e) => DISHES.find((d) => d.id === e.id)).filter(Boolean);
+  if (!items.length) return "";
+  return "<div class='home-strip'><div class='group-title'>最近吃过<span class='n'>" + items.length + "</span></div>" +
+    "<div class='chips'>" + items.map((d) => "<button class='chipbtn' data-id='" + d.id + "'>" + d.name + "</button>").join("") + "</div></div>";
+}
+
 function card(d, i) {
   const why = ((state.reasons && state.reasons.get(d.id)) || [])[0];
-  return "<div class='dish' data-id='" + d.id + "' style='--i:" + (i || 0) + "'>" + thumb(d) +
+  const on = state.saved.has(d.id);
+  return "<div class='dish' data-id='" + d.id + "' style='--i:" + (i || 0) + "'>" +
+    "<button class='star" + (on ? " on" : "") + "' data-save='" + d.id + "' aria-label='收藏'>" + (on ? "★" : "☆") + "</button>" +
+    thumb(d) +
     "<div class='dish-body'><div class='dish-name'>" + d.name + "</div>" +
     "<div class='meta'><span class='chip'>" + d.timeMin + " 分钟</span><span class='chip'>" + spicyWord[d.spicy] + "</span></div>" +
     (why ? "<div class='why'>" + why + "</div>" : "") + "</div></div>";
@@ -281,6 +306,8 @@ function render() {
       bigBtn("a", "🤔", "不知道吃什么", "问几个问题，按口味挑菜", "quiz") +
       bigBtn("b", "🥕", "家里有食材", "告诉我你有什么，我报菜名", "pantry") +
       bigBtn("c", "🎯", "直接来一批", "不问条件，随便抽几道", "spin") +
+      recentStrip() +
+      (state.saved.size ? "<button class='home-link' data-go='saved'>★ 我的收藏<span>" + state.saved.size + " 道</span>›</button>" : "") +
       "<p class='foot-note'>菜库 " + DISHES.length + " 道 · 点过「不想吃」的不会再出现</p>" +
     "</div>";
   }
@@ -379,16 +406,31 @@ function render() {
     }
   }
 
+  if (state.screen === "saved") {
+    const list = [...state.saved].map((id) => DISHES.find((d) => d.id === id)).filter(Boolean);
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='topbar'><button class='back' data-go='home' aria-label='返回'>‹</button>" +
+      "<h2 style='flex:1;font-size:19px'>我的收藏</h2><span class='pill'>" + list.length + " 道</span></div>" +
+      (list.length
+        ? "<p class='result-sub'>都在这里了，点一下看做法，星星点掉就从收藏里去掉。</p><div class='grid'>" + list.map((d, i) => card(d, i)).join("") + "</div>"
+        : "<div class='empty'><span class='big-emoji'>⭐</span>还没有收藏。<br>看到想吃的，点卡片右上角的星星。</div>") +
+      "</div>";
+  }
+
   if (state.screen === "detail") {
     const d = DISHES.find((x) => x.id === state.current);
-    const on = state.disliked.has(d.id);
+    const no = state.disliked.has(d.id);
+    const sv = state.saved.has(d.id);
+    const ate = daysSinceEaten(d.id) < 1;
     const hero = "<div class='hero' style='background:" + tint(d) + "'>" +
       "<span>" + emojiOf(d) + "</span>" +
       (d.image ? "<img src='" + d.image + "' alt='' onerror='this.remove()'>" : "") +
       "<a class='photo' href='" + SEARCH.img(d.name) + "' target='_blank' rel='noopener'>📷 看真实照片</a></div>";
     v.innerHTML = "<div class='screen'>" +
       "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
-      "<span class='pill'>" + d.region + "菜</span><span class='pill'>大众度 " + d.popularity + "</span></div>" +
+      "<span class='pill'>" + d.region + "菜</span><span class='pill'>大众度 " + d.popularity + "</span>" +
+      "<span style='flex:1'></span>" +
+      "<button class='icon-btn' data-share='" + d.id + "' aria-label='分享'>↗</button></div>" +
       hero +
       "<h1 style='font-size:25px;margin:0 0 12px'>" + d.name + "</h1>" +
       "<div class='detail-meta'>" +
@@ -399,7 +441,11 @@ function render() {
       "<h3 style='margin-bottom:10px'>做法</h3><div class='steps'>" +
       d.steps.map((s, i) => "<div class='step'><span class='n'>" + (i + 1) + "</span><span class='txt'>" + s + "</span></div>").join("") +
       "</div>" + (d.tips ? "<div class='tip'>💡 " + d.tips + "</div>" : "") +
-      "<button class='dislike" + (on ? " on" : "") + "' data-dislike='" + d.id + "'>" + (on ? "✓ 已标记不想吃，不会再推" : "🙅 以后别再推这道") + "</button>" +
+      "<div class='actions'>" +
+      "<button class='btn" + (sv ? " primary" : "") + "' data-save='" + d.id + "'>" + (sv ? "★ 已收藏" : "☆ 收藏") + "</button>" +
+      "<button class='btn" + (ate ? " done" : "") + "' data-eat='" + d.id + "'" + (ate ? " disabled" : "") + ">" +
+      (ate ? "✓ 今天吃过了" : "🍽 吃过了") + "</button></div>" +
+      "<button class='dislike" + (no ? " on" : "") + "' data-dislike='" + d.id + "'>" + (no ? "✓ 已标记不想吃，不会再推" : "🙅 以后别再推这道") + "</button>" +
       "<div class='sticky'><div class='inner'>" +
       "<a class='btn' href='" + SEARCH.recipes(d.name) + "' target='_blank' rel='noopener'>📖 找菜谱</a>" +
       "<a class='btn primary' href='" + SEARCH.video(d.name) + "' target='_blank' rel='noopener'>▶ 看视频</a>" +
@@ -409,7 +455,7 @@ function render() {
 }
 
 document.addEventListener("click", (e) => {
-  const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft]");
+  const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft],[data-save],[data-eat],[data-share]");
   if (!t) return;
   if (t.dataset.soft) {
     state.soft = state.soft || new Set();
@@ -424,6 +470,35 @@ document.addEventListener("click", (e) => {
       return;
     }
     return render();
+  }
+  if (t.dataset.save) {
+    const id = t.dataset.save;
+    const on = !state.saved.has(id);
+    if (on) state.saved.add(id); else state.saved.delete(id);
+    localStorage.setItem("saved", JSON.stringify([...state.saved]));
+    // 同一道菜的星星可能同时出现在卡片和详情页，全同步，不整页重刷
+    document.querySelectorAll("[data-save='" + id + "']").forEach((el) => {
+      if (el.classList.contains("star")) { el.classList.toggle("on", on); el.textContent = on ? "★" : "☆"; }
+      else { el.classList.toggle("primary", on); el.textContent = on ? "★ 已收藏" : "☆ 收藏"; }
+    });
+    if (state.screen === "saved") return render();   // 在收藏页取消，卡片要消失
+    return;
+  }
+  if (t.dataset.eat) {
+    markEaten(t.dataset.eat);
+    t.textContent = "✓ 今天吃过了";
+    t.classList.add("done");
+    t.disabled = true;
+    return;
+  }
+  if (t.dataset.share) {
+    const d = DISHES.find((x) => x.id === state.current);
+    const url = location.origin + location.pathname + "#" + d.id;
+    if (navigator.share) { navigator.share({ title: d.name, text: "今天吃「" + d.name + "」，做法：" }).catch(() => {}); return; }
+    const text = "今天吃「" + d.name + "」，做法：" + url;
+    if (navigator.clipboard) { navigator.clipboard.writeText(text).then(() => { t.textContent = "✓"; }).catch(() => {}); return; }
+    t.textContent = "✓";
+    return;
   }
   if (t.dataset.ans !== undefined) {
     const qs = activeQs();
@@ -462,6 +537,7 @@ document.addEventListener("click", (e) => {
     return render();
   }
   const go = t.dataset.go;
+  if (go === "saved") { state.screen = "saved"; return render(); }
   if (go === "home") { state.screen = "home"; state.qi = 0; state.answers = {}; state.soft = new Set(); }
   else if (go === "quiz") { state.screen = "quiz"; state.qi = 0; state.answers = {}; state.soft = new Set(); }
   else if (go === "soft") { state.screen = "soft"; }
@@ -502,6 +578,11 @@ document.addEventListener("input", (e) => { if (e.target.id === "pantry") state.
     return;
   }
   try { state.disliked = new Set(JSON.parse(localStorage.getItem("disliked") || "[]")); } catch (e) {}
+  try { state.saved = new Set(JSON.parse(localStorage.getItem("saved") || "[]")); } catch (e) {}
+  try { state.eaten = JSON.parse(localStorage.getItem("eaten") || "[]") || []; } catch (e) { state.eaten = []; }
+  const hash = (typeof window !== "undefined" && window.location && window.location.hash) || "";
+  const deep = hash.replace("#", "").trim();
+  if (deep && DISHES.some((d) => d.id === deep)) { state.current = deep; state.from = "home"; state.screen = "detail"; }
   render();
 })();
 
