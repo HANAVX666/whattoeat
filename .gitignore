@@ -49,3 +49,14 @@ tmp-*
 .part2.json
 .existing.txt
 .photos-bing.log
+.cdp*.cjs
+.cdp*.txt
+.sheet*.py
+.val.txt
+.v*.txt
+.ph*.txt
+.th.txt
+.s2.txt
+.dbg.txt
+.cdp*.out.txt
+.srv*.txt
