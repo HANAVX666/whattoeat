@@ -30,9 +30,13 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 17
 
-      - uses: android-actions/setup-android@v3
+      - name: 环境自检
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" || true
+          java -version
 
       - name: 装依赖并构建网页产物
         run: |
