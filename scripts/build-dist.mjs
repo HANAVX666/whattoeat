@@ -6,7 +6,8 @@ import { createHash } from "node:crypto";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");
 const SHELL_FILES = ["index.html", "app.js", "style.css", "manifest.webmanifest", "sw.js",
-                     "icon-192.png", "icon-512.png", "icon-512-maskable.png"];
+                     "icon-192.png", "icon-512.png", "icon-512-maskable.png",
+                     "screenshot-result.png", "screenshot-detail.png"];
 
 rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST, { recursive: true });
