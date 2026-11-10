@@ -391,7 +391,7 @@ function render() {
         "<div class='grid'>" + state.batch.map((d, i) => card(d, i)).join("") + "</div>" +
         "<p class='foot-note'>点过「不想吃」的不会再出现</p>" +
         "<div class='sticky'><div class='inner'>" +
-        "<button class='btn' data-go='one'>🎯 帮我定一个</button>" +
+        "<button class='btn' data-go='one'>🎡 转盘定一个</button>" +
         "<button class='btn primary' data-go='refresh'>🎲 刷新换一批</button>" +
         "</div></div></div>";
     }
@@ -516,7 +516,105 @@ function closePhoto() {
   document.body.style.overflow = "";
 }
 
+/* ---------- 转盘：帮我定一个 ---------- */
+const WHEEL_COLORS = ["#f9dccb", "#fbe8c8", "#e9efd8", "#f6dcc0", "#f4d5c4", "#e4ead6", "#fae4d3", "#f2e3c9"];
+let wheelState = { winner: null, spinning: false };
+
+function wheelHtml() {
+  const items = state.batch;
+  const n = items.length;
+  const seg = 360 / n;
+  const stops = items.map((d, i) => WHEEL_COLORS[i % WHEEL_COLORS.length] + " " + (i * seg).toFixed(2) + "deg " + ((i + 1) * seg).toFixed(2) + "deg").join(",");
+  const labels = items.map((d, i) => {
+    const a = i * seg + seg / 2;
+    return "<div class='wheel-label' style='transform:rotate(" + a.toFixed(2) + "deg)'><span style='transform:rotate(" + (-a).toFixed(2) + "deg)'>" + d.name + "</span></div>";
+  }).join("");
+  return "<div class='wheel-card'>" +
+    "<h3 class='wheel-title'>交给转盘吧</h3>" +
+    "<div class='wheel-stage'>" +
+      "<div class='wheel-disc' id='wheelDisc' style='background:conic-gradient(from 0deg," + stops + ")'>" + labels + "<span class='wheel-hub'>🎯</span></div>" +
+      "<span class='wheel-pin'>▼</span>" +
+    "</div>" +
+    "<p class='wheel-result' id='wheelResult'>看它停在哪道</p>" +
+    "<div class='lb-btns wheel-btns'>" +
+      "<button class='btn sm' data-wheel-spin>再转一次</button>" +
+      "<button class='btn sm primary' data-wheel-go disabled>就吃这个</button>" +
+      "<button class='btn sm' data-wheel-close>关闭</button>" +
+    "</div></div>";
+}
+
+function wheelSpin() {
+  const disc = document.getElementById && document.getElementById("wheelDisc");
+  const items = state.batch;
+  if (!disc || !items.length) return;
+  const n = items.length;
+  const seg = 360 / n;
+  const i = Math.floor(Math.random() * n);
+  const center = i * seg + seg / 2;
+  const target = 360 * 5 + ((360 - (center % 360)) % 360);
+  wheelState.spinning = true;
+  wheelState.winner = null;
+  disc.style.transition = "none";
+  disc.style.transform = "rotate(0deg)";
+  void disc.offsetWidth;
+  disc.style.transition = "transform 3.4s cubic-bezier(.12,.72,.05,1)";
+  disc.style.transform = "rotate(" + target + "deg)";
+  const res = document.getElementById("wheelResult");
+  const go = document.querySelector && document.querySelector("[data-wheel-go]");
+  const labels = document.querySelectorAll ? document.querySelectorAll(".wheel-label") : [];
+  labels.forEach((el) => el.classList && el.classList.remove("win"));
+  if (res) res.textContent = "转起来了…";
+  if (go) go.setAttribute("disabled", "disabled");
+  setTimeout(() => {
+    wheelState.spinning = false;
+    wheelState.winner = items[i];
+    if (res) res.innerHTML = "就吃 <b>" + items[i].name + "</b> 吧";
+    if (go) go.removeAttribute("disabled");
+    labels.forEach((el, k) => {
+      if (!el.classList) return;
+      el.classList.toggle("win", k === i);
+      // 停稳后把文字转正，别让赢家倒着写
+      const span = el.firstElementChild || (el.querySelector && el.querySelector("span"));
+      if (span && span.style) {
+        const a = k * seg + seg / 2;
+        span.style.transition = "transform .45s cubic-bezier(.22,.61,.36,1)";
+        span.style.transform = "rotate(" + (-(a + target) % 360).toFixed(2) + "deg)";
+      }
+    });
+  }, 3500);
+}
+
+function openWheel() {
+  if (!state.batch.length) return;
+  if (typeof document === "undefined" || !document.getElementById || !document.body) return;
+  let box = document.getElementById("wheel");
+  if (!box) { box = document.createElement("div"); box.id = "wheel"; box.className = "lightbox"; document.body.appendChild(box); }
+  box.innerHTML = wheelHtml();
+  box.classList.add("on");
+  document.body.style.overflow = "hidden";
+  setTimeout(wheelSpin, 80);
+}
+function closeWheel() {
+  const box = document.getElementById && document.getElementById("wheel");
+  if (box) box.classList.remove("on");
+  if (document.body) document.body.style.overflow = "";
+  wheelState.winner = null;
+}
+
 document.addEventListener("click", (e) => {
+  const wb = e.target.closest("[data-wheel-spin],[data-wheel-go],[data-wheel-close]");
+  if (wb && (wb.dataset.wheelSpin !== undefined || wb.dataset.wheelGo !== undefined || wb.dataset.wheelClose !== undefined)) {
+    if (wb.dataset.wheelSpin !== undefined) { wheelSpin(); return; }
+    if (wb.dataset.wheelClose !== undefined) { closeWheel(); return; }
+    if (wb.dataset.wheelGo !== undefined) {
+      if (wheelState.spinning) return;
+      const d = wheelState.winner;
+      closeWheel();
+      if (!d) return;
+      state.current = d.id; state.from = state.screen; state.screen = "detail";
+      return render();
+    }
+  }
   if (e.target.id === "lightbox") { closePhoto(); return; }
   const lb = e.target.closest("[data-lb-close],[data-lb-next]");
   if (lb && lb.dataset && (lb.dataset.lbClose !== undefined || lb.dataset.lbNext !== undefined)) {
@@ -619,11 +717,7 @@ document.addEventListener("click", (e) => {
   else if (go === "result") { state.screen = "result"; pick(true); }
   else if (go === "refresh") { state.screen = "result"; pick(false); }
   else if (go === "spin") { state.answers = {}; state.soft = new Set(); state.shown = new Set(); state.screen = "result"; pick(true); }
-  else if (go === "one") {
-    if (!state.batch.length) { render(); return; }
-    const d = state.batch[Math.floor(Math.random() * state.batch.length)];
-    state.current = d.id; state.from = state.screen; state.screen = "detail";
-  }
+  else if (go === "one") { openWheel(); return; }
   else if (go === "back") { state.screen = state.from || "home"; }
   else if (go === "pantry") {
     const inp = $("#pantry"); if (inp) state.pantryText = inp.value;
@@ -643,7 +737,12 @@ document.addEventListener("click", (e) => {
 
 document.addEventListener("input", (e) => { if (e.target.id === "pantry") state.pantryText = e.target.value; });
 
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePhoto(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const wb = document.getElementById && document.getElementById("wheel");
+  if (wb && wb.classList.contains("on")) { closeWheel(); return; }
+  closePhoto();
+});
 
 (async () => {
   try {

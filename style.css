@@ -323,3 +323,21 @@ input[type=text]:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 4px
 .lb-txt span{font-size:11.5px;color:var(--muted)}
 .lb-btns{display:flex;gap:8px;flex-wrap:wrap}
 .btn.sm{padding:9px 12px;font-size:13.5px;border-radius:12px;box-shadow:none}
+
+
+/* 转盘：帮我定一个（v317） */
+.lightbox .wheel-card{width:min(340px,92vw);background:var(--card);border-radius:24px;padding:20px 18px 16px;text-align:center;box-shadow:0 24px 60px rgba(30,20,15,.35)}
+.wheel-title{margin:0 0 14px;font-size:17px}
+.wheel-stage{position:relative;width:min(272px,72vw);aspect-ratio:1;margin:0 auto}
+.wheel-disc{position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 7px #fff,0 10px 26px rgba(120,80,60,.2);transform:rotate(0deg)}
+.wheel-label{position:absolute;inset:0;display:block;text-align:center;pointer-events:none}
+.wheel-label>span{display:inline-block;white-space:nowrap;margin-top:13px;font-size:12px;line-height:1.25;font-weight:600;color:#6b4636;background:rgba(255,255,255,.76);padding:3px 8px;border-radius:999px;transition:background .2s,color .2s}
+.wheel-label.win>span{background:var(--red);color:#fff}
+.wheel-hub{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:var(--card);box-shadow:0 2px 8px rgba(120,80,60,.28);display:grid;place-items:center;font-size:22px}
+.wheel-pin{position:absolute;left:50%;top:-16px;transform:translateX(-50%);font-size:20px;line-height:1;color:var(--red);filter:drop-shadow(0 2px 3px rgba(150,60,40,.3))}
+.wheel-result{margin:14px 0 12px;min-height:26px;font-size:14px;color:var(--muted)}
+.wheel-result b{color:var(--red-deep);font-size:18px}
+.wheel-btns{display:flex;gap:8px}
+.wheel-btns .btn{flex:1}
+.btn[disabled]{opacity:.45}
+@media (max-height:700px){.wheel-stage{width:min(220px,60vw)}.wheel-label>span{font-size:11px;margin-top:10px}.wheel-title{font-size:16px}}

@@ -1,4 +1,4 @@
-const VERSION = "v316-thumbs";
+const VERSION = "v317-wheel";
 const CACHE = "eat-" + VERSION;
 const IMG_CACHE = "eat-img-v1";
 const SHELL = [

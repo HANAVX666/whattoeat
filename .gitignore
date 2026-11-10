@@ -39,3 +39,6 @@ test/.shots-tmp/
 .verify-thumbs.json
 .verify.log
 .missing.json
+.wv.mjs
+.wl.mjs
+tmp-*
