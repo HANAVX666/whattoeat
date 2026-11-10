@@ -10,6 +10,7 @@ const appEl = { innerHTML: "", querySelector: () => null };
 const inputEl = { value: "" };
 const document = {
   querySelector: (s) => (s === "#app" ? appEl : s === "#pantry" ? inputEl : null),
+  querySelectorAll: () => [],
   addEventListener: (type, fn) => { handlers[type] = fn; },
 };
 const handlers = {};

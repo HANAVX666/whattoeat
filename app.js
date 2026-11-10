@@ -7,19 +7,19 @@ const SEARCH = {
 
 let DISHES = [];
 let PHOTOS = {};
+let THUMBS = new Set();
 const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), saved: new Set(), eaten: [], batch: [], reasons: new Map(), refresh: 0, pantryText: "" };
 
 const QUESTIONS = [
   { id: "src", q: "今天自己做，还是点外卖？", opts: [["自己动手做", "cook"], ["点外卖 / 出去吃", "out"], ["都行", "any"]] },
-  { id: "people", q: "今天几个人吃？", opts: [["就我一个", "1"], ["两个人", "2"], ["一家人", "family"], ["请客吃饭", "party"], ["都行", "any"]] },
+  { id: "meal", q: "这是今天的哪一顿？", opts: [["早饭", "breakfast"], ["午饭", "lunch"], ["晚饭", "dinner"], ["宵夜", "night"], ["都行", "any"]] },
   { id: "route", q: "想吃哪个路子的菜？", opts: [["家常菜就行", "家常"], ["川湘：香辣下饭", "川湘"], ["粤苏浙：清淡鲜", "粤苏浙"], ["都行", "any"]] },
   { id: "diet", q: "想吃荤的还是素的？", opts: [["想吃肉", "荤"], ["想吃素", "素"], ["都行，不挑", "any"]] },
   { id: "taste", q: "口味想清淡点还是够味？", opts: [["清淡一点", "清淡"], ["家常就行", "适中"], ["要够味", "重口"], ["都行", "any"]] },
   { id: "spicy", q: "吃辣吗？", opts: [["不吃辣", "0"], ["能吃点辣", "2"], ["越辣越好", "4"], ["都行", "any"]] },
   { id: "form", q: "想吃哪一类？", opts: [["炒菜炖菜，配米饭", "菜"], ["汤和羹", "汤羹"], ["面、饭、饺子这类", "主食"], ["凉菜、小吃、卤味", "小吃"], ["都行", "any"]] },
-  { id: "method", q: "想怎么做的？", opts: [["炒", "炒"], ["炖、烧", "炖煮"], ["蒸", "蒸"], ["煎、烤", "煎烤"], ["炸", "炸"], ["凉拌", "凉拌"], ["卤", "卤"], ["都行", "any"]] },
-  { id: "main", q: "想吃什么主料？", opts: [["鸡肉", "鸡肉"], ["猪肉", "猪肉"], ["牛肉", "牛肉"], ["鱼、虾", "鱼虾"], ["鸡蛋", "鸡蛋"], ["豆腐豆制品", "豆制品"], ["青菜", "蔬菜"], ["面食米饭", "面点"], ["都行", "any"]] },
-  { id: "time", q: "能花多少时间？", when: (a) => a.src !== "out", opts: [["十分钟内", "10"], ["半小时左右", "30"], ["不着急", "999"], ["都行", "any"]] }
+  { id: "time", q: "能花多少时间？", when: (a) => a.src !== "out", opts: [["十分钟内", "10"], ["半小时左右", "30"], ["不着急", "999"], ["都行", "any"]] },
+  { id: "equip", q: "厨房有什么家伙什？", when: (a) => a.src === "cook", opts: [["只有一口锅", "basic"], ["有烤箱或空气炸锅", "oven"], ["锅碗瓢盆都有", "any"]] }
 ];
 
 const activeQs = () => QUESTIONS.filter((q) => !q.when || q.when(state.answers));
@@ -154,6 +154,17 @@ function scoreOf(d, a, ctx) {
     else s -= Math.min(30, (d.timeMin - t) / 2);
   }
 
+  if (a.meal && a.meal !== "any") {
+    if (a.meal === "breakfast") { if (d.tags.includes("早餐")) { s += 26; why.push("当早饭合适"); } else s -= 24; }
+    else if (a.meal === "night") { if (d.tags.includes("宵夜")) { s += 26; why.push("适合当宵夜"); } else s -= 18; }
+  }
+  if (a.budget && a.budget !== "any") {
+    if (a.budget === "cheap") { if (d.tags.includes("便宜")) { s += 18; why.push("花不了几个钱"); } else s -= d.popularity >= 4 ? 4 : 0; }
+    else if (a.budget === "good" && d.popularity >= 4) { s += 10; why.push("值得吃一顿"); }
+  }
+  if (a.equip === "oven" && (d.method === "煎烤" || d.method === "炸")) { s += 18; why.push("正好用上" + (d.method === "炸" ? "炸锅" : "烤箱")); }
+  if (a.equip === "basic" && (d.method === "炒" || d.method === "炖煮" || d.method === "蒸")) { s += 10; }
+
   if (a.src === "out") {
     if (d.difficulty >= 3) s -= 12;
     if (d.popularity >= 4) { s += 6; why.push("外面常见"); }
@@ -241,6 +252,7 @@ function condChips() {
   if (a.spicy === "0") c.push("一点不辣");
   if (a.spicy === "2") c.push("能吃点辣");
   if (a.spicy === "4") c.push("要够辣");
+  if (a.meal && a.meal !== "any") c.push({ breakfast: "早饭", lunch: "午饭", dinner: "晚饭", night: "宵夜" }[a.meal] || "");
   if (a.people === "1") c.push("一个人吃");
   if (a.people === "2") c.push("两个人");
   if (a.people === "family") c.push("一家人");
@@ -251,6 +263,8 @@ function condChips() {
   if (a.method && a.method !== "any") c.push(a.method);
   if (a.main && a.main !== "any") c.push("主料：" + a.main);
   if (a.time && a.time !== "any") c.push(a.time === "999" ? "不赶时间" : a.time + " 分钟内");
+  if (a.equip === "oven") c.push("有烤箱");
+  if (a.equip === "basic") c.push("一口锅");
   for (const k of state.soft || []) c.push(SOFT_MAP[k] || k.slice(k.indexOf(":") + 1));
   if (!c.length) return "";
   return "<div class='conds'>" + c.map((x) => "<span>" + x + "</span>").join("") + "</div>";
@@ -258,8 +272,10 @@ function condChips() {
 
 function thumb(d) {
   const ph = (PHOTOS[d.id] || [])[0];
-  const img = ph
-    ? "<img src='" + ph.u + "' alt='' loading='lazy' decoding='async' referrerpolicy='no-referrer' onerror='this.remove()'>"
+  // 卡片优先用本地 webp 缩略图（约 18KB），没有就退回网络原图
+  const src = THUMBS.has(d.id) ? "./data/thumbs/" + d.id + ".webp" : (ph && ph.u) || "";
+  const img = src
+    ? "<img src='" + src + "' alt='' loading='lazy' decoding='async' referrerpolicy='no-referrer' data-remote='" + ((ph && ph.u) || "") + "'>"
     : "";
   return "<div class='thumb' style='background:" + tint(d) + "'><span>" + emojiOf(d) + "</span>" + img + "</div>";
 }
@@ -457,6 +473,15 @@ function render() {
       "</div></div></div>";
   }
   window.scrollTo(0, 0);
+  if (typeof document.querySelectorAll === "function") document.querySelectorAll(".thumb img").forEach(function (im) {
+    const swap = function () {
+      const remote = im.getAttribute("data-remote");
+      if (remote) { im.removeAttribute("data-remote"); im.src = remote; }
+      else im.remove();
+    };
+    im.addEventListener("error", swap);
+    if (im.complete && im.naturalWidth === 0) swap();
+  });
   const cover = $("#app .hero img.cover");
   if (cover) {
     const on = () => cover.classList.add("on");
@@ -626,6 +651,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePhoto
     const lists = await Promise.all(idx.files.map((f) => fetch("./data/dishes/" + f).then((r) => r.json())));
     DISHES = lists.flat();
     try { PHOTOS = await (await fetch("./data/photos.json")).json(); } catch (e) { PHOTOS = {}; }
+    try { THUMBS = new Set(await (await fetch("./data/thumbs.json")).json()); } catch (e) { THUMBS = new Set(); }
   } catch (err) {
     $("#app").innerHTML = "<div class='empty'>菜谱库加载失败。<br>请用本地服务器打开。</div>";
     return;

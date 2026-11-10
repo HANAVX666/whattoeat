@@ -10,3 +10,9 @@ preview.html
 .srv.pid
 .chrome-tmp/
 .chrome.pid
+.verify*
+.meal*
+.smoke.txt
+.log2.txt
+.thumbs.log
+.tmp-*

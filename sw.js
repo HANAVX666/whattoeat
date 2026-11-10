@@ -1,4 +1,4 @@
-const VERSION = "v315-cards";
+const VERSION = "v316-thumbs";
 const CACHE = "eat-" + VERSION;
 const IMG_CACHE = "eat-img-v1";
 const SHELL = [
