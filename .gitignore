@@ -44,3 +44,8 @@ test/.shots-tmp/
 tmp-*
 .niche.mjs
 .newsheet.py
+.cand.json
+.ing.json
+.part2.json
+.existing.txt
+.photos-bing.log
