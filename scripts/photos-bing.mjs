@@ -159,7 +159,7 @@ async function handle(d) {
     picks.push({ u: s.c.u });
   }
   for (const s of saved) { try { fs.unlinkSync(s.file); } catch {} }
-  if (picks.length) { PHOTOS[d.id] = picks; return { id: d.id, n: picks.length, cand: cands.length, t: picks[0].t.slice(0, 40) }; }
+  if (picks.length) { PHOTOS[d.id] = picks; return { id: d.id, n: picks.length, cand: cands.length, t: "" }; }
   return { id: d.id, n: 0, cand: cands.length, t: "-" };
 }
 
