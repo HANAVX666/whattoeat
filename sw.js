@@ -1,5 +1,6 @@
-const VERSION = "v313-fixbar";
+const VERSION = "v315-cards";
 const CACHE = "eat-" + VERSION;
+const IMG_CACHE = "eat-img-v1";
 const SHELL = [
   "./", "./index.html", "./app.js", "./style.css",
   "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"
@@ -14,7 +15,7 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== IMG_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -23,7 +24,23 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
+  // 菜图（百度图片）走独立的缓存：第一次下载，之后直接命中本地
+  if (url.origin !== self.location.origin) {
+    if (/(^|\.)baidu\.com$/.test(url.hostname)) {
+      e.respondWith(
+        caches.open(IMG_CACHE)
+          .then(async (cache) => {
+            const hit = await cache.match(req);
+            if (hit) return hit;
+            const res = await fetch(req);
+            if (res && (res.ok || res.type === "opaque")) cache.put(req, res.clone()).catch(() => {});
+            return res;
+          })
+          .catch(() => fetch(req))
+      );
+    }
+    return;
+  }
 
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {

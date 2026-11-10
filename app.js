@@ -257,7 +257,10 @@ function condChips() {
 }
 
 function thumb(d) {
-  const img = d.image ? "<img src='" + d.image + "' loading='lazy' alt='' onerror='this.remove()'>" : "";
+  const ph = (PHOTOS[d.id] || [])[0];
+  const img = ph
+    ? "<img src='" + ph.u + "' alt='' loading='lazy' decoding='async' referrerpolicy='no-referrer' onerror='this.remove()'>"
+    : "";
   return "<div class='thumb' style='background:" + tint(d) + "'><span>" + emojiOf(d) + "</span>" + img + "</div>";
 }
 
@@ -427,7 +430,7 @@ function render() {
     const hero = "<div class='hero' style='background:" + tint(d) + "'>" +
       "<span>" + emojiOf(d) + "</span>" +
       (ph ? "<img class='cover' src='" + ph.u + "' alt='" + d.name + " 实物图'>" : "") +
-      "<button class='photo' data-photo='" + d.id + "'>" + (ph ? "📷 看真实照片" : "🔍 网上搜图") + "</button></div>";
+      "<button class='photo' data-photo='" + d.id + "'>" + (ph ? "📷 更多图片" : "🔍 网上搜图") + "</button></div>";
     v.innerHTML = "<div class='screen'>" +
       "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
       "<span class='pill'>" + d.region + "菜</span><span class='pill'>大众度 " + d.popularity + "</span>" +
