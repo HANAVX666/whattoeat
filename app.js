@@ -628,27 +628,114 @@ function copyText(id) {
   doCopy(recipeText(d));
 }
 
-/* ---------- 今日推荐（人工精选，不刷新） ---------- */
-const DAILY_MONTH = 11; // 这组数据整理的月份
-const dailyStale = () => { try { return (new Date().getMonth() + 1) !== DAILY_MONTH; } catch (e) { return false; } };
-
-const DAILY = {
-  updated: "11 月",
-  groups: [
-    { id: "hot", title: "最近正流行", items: [
-      ["fanqie-xiaren", "虾仁滑嫩不柴，酸甜口的小孩也爱吃"],
-      ["suan-dou-jiao-rou-mo", "一勺酸豆角能扒两碗饭，成本很低"],
-      ["duojiao-zheng-jinzhengu", "上锅蒸 12 分钟，几乎不用看火"],
-      ["tangcu-oupian", "脆生生带一点酸甜，配油腻的菜正好"]
-    ]},
-    { id: "light", title: "清爽养胃", items: [
-      ["ji-yu-doufu-tang", "汤白味鲜，蛋白质好吸收"],
-      ["shang-tang-wa-wa-cai", "清淡解腻，配饭不抢味"],
-      ["zheng-nan-gua", "整块蒸熟，甜味来自南瓜本身"],
-      ["xiao-mi-zhou", "小米煮到开花，胃不舒服时吃它"]
-    ]}
-  ]
+/* ---------- 今日推荐（按当天从菜库里算，不写死） ---------- */
+const SEASON = {
+  1: ["白萝卜", "大白菜", "白菜", "萝卜", "羊肉", "酸菜", "红薯", "红枣", "桂圆", "冬笋", "栗子", "牛肉"],
+  2: ["白萝卜", "大白菜", "白菜", "萝卜", "羊肉", "酸菜", "红薯", "红枣", "冬笋", "春笋", "韭菜"],
+  3: ["韭菜", "春笋", "荠菜", "豌豆", "菠菜", "香椿", "豆芽", "蒜苗", "莴笋", "芹菜"],
+  4: ["韭菜", "春笋", "荠菜", "豌豆", "菠菜", "香椿", "豆芽", "蒜苗", "莴笋", "芹菜"],
+  5: ["韭菜", "春笋", "荠菜", "豌豆", "菠菜", "香椿", "豆芽", "蒜苗", "莴笋", "黄瓜", "蚕豆"],
+  6: ["黄瓜", "冬瓜", "丝瓜", "苦瓜", "茄子", "番茄", "毛豆", "莲藕", "绿豆", "豆角", "空心菜"],
+  7: ["黄瓜", "冬瓜", "丝瓜", "苦瓜", "茄子", "番茄", "毛豆", "莲藕", "绿豆", "豆角", "空心菜"],
+  8: ["黄瓜", "冬瓜", "丝瓜", "苦瓜", "茄子", "番茄", "毛豆", "莲藕", "绿豆", "豆角", "空心菜", "南瓜"],
+  9: ["南瓜", "莲藕", "山药", "板栗", "栗子", "芋头", "芋艿", "白萝卜", "大白菜", "白菜", "萝卜", "银耳", "螃蟹", "红薯", "玉米"],
+  10: ["南瓜", "莲藕", "山药", "板栗", "栗子", "芋头", "芋艿", "白萝卜", "大白菜", "白菜", "萝卜", "银耳", "螃蟹", "红薯", "玉米"],
+  11: ["南瓜", "莲藕", "山药", "板栗", "栗子", "芋头", "芋艿", "白萝卜", "大白菜", "白菜", "萝卜", "银耳", "螃蟹", "红薯", "冬笋", "玉米"],
+  12: ["白萝卜", "大白菜", "白菜", "萝卜", "羊肉", "酸菜", "红薯", "红枣", "桂圆", "冬笋", "栗子", "牛肉"]
 };
+const monthOf = () => { try { return new Date().getMonth() + 1; } catch (e) { return 11; } };
+const dayKey = () => {
+  try { const d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  catch (e) { return "2025-1-1"; }
+};
+function seedNum(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function seasonScore(d, m) {
+  const words = SEASON[m] || [];
+  const ing = d.mainIngredients || [];
+  const name = d.name || "";
+  let total = 0;
+  for (const w of words) {
+    if (name.includes(w)) total += 3;
+    else {
+      const idx = ing.indexOf(w);
+      if (idx === 0) total += 3;
+      else if (idx > 0) total += idx < 3 ? 2 : 1;
+    }
+  }
+  return total;
+}
+function seasonHit(d, m) {
+  const words = SEASON[m] || [];
+  const ing = d.mainIngredients || [];
+  const name = d.name || "";
+  let best = "", bestScore = 0;
+  for (const w of words) {
+    let sc = 0;
+    if (name.includes(w)) sc = 3;
+    else {
+      const idx = ing.indexOf(w);
+      if (idx === 0) sc = 3;
+      else if (idx > 0) sc = idx < 3 ? 2 : 1;
+    }
+    if (sc > bestScore) { bestScore = sc; best = w; }
+  }
+  return best;
+}
+function whySeason(d, m) {
+  const hit = seasonHit(d, m);
+  const bits = [];
+  if (hit) bits.push(hit + "正当时");
+  if (d.timeMin <= 15) bits.push("十几分钟上桌");
+  else if (d.timeMin <= 30) bits.push("半小时内能好");
+  if (bits.length < 2) {
+    if (d.diet === "素") bits.push("清爽不腻");
+    else if (d.spicy >= 3) bits.push("够味下饭");
+    else if (d.form === "汤羹") bits.push("连汤带水，暖胃");
+    else bits.push("好上手，不容易翻车");
+  }
+  return bits.slice(0, 2).join("，");
+}
+function whyLight(d) {
+  const bits = [d.form === "汤羹" ? "汤水为主，少油" : "素的，清爽"];
+  bits.push(d.spicy === 0 ? "不辣，胃里舒服" : "微辣不刺激");
+  return bits.slice(0, 2).join("，");
+}
+function seededTop(list, n, seed, skip) {
+  const pool = skip ? list.filter((d) => !skip.has(d.id)) : list;
+  return pool.map((d) => ({ d, k: seedNum(seed + "|" + d.id) }))
+    .sort((x, y) => x.k - y.k).slice(0, n).map((x) => x.d);
+}
+let DAILY_CACHE = null;
+function buildDaily() {
+  const m = monthOf();
+  const seed = dayKey();
+  const hotCand = DISHES
+    .filter((d) => seasonScore(d, m) > 0 && d.popularity >= 3.5 && d.timeMin <= 50)
+    .sort((x, y) => (seasonScore(y, m) * 0.6 + y.popularity) - (seasonScore(x, m) * 0.6 + x.popularity))
+    .slice(0, 60);
+  const lightCand = DISHES
+    .filter((d) => (d.form === "汤羹" || d.diet === "素") && d.spicy <= 1 && d.timeMin <= 45 && d.popularity >= 3)
+    .sort((x, y) => y.popularity - x.popularity)
+    .slice(0, 60);
+  const hot = seededTop(hotCand, 4, seed + "|hot");
+  const light = seededTop(lightCand, 4, seed + "|light", new Set(hot.map((d) => d.id)));
+  return {
+    seed,
+    groups: [
+      { id: "hot", title: "这个月正当时", items: hot.map((d) => [d.id, whySeason(d, m)]) },
+      { id: "light", title: "清爽养胃", items: light.map((d) => [d.id, whyLight(d)]) }
+    ]
+  };
+}
+function getDaily() {
+  const key = dayKey();
+  if (!DAILY_CACHE || DAILY_CACHE.seed !== key) DAILY_CACHE = buildDaily();
+  return DAILY_CACHE;
+}
 
 /* ---------- 学习指南（外链指引） ---------- */
 const bili = (q) => "https://search.bilibili.com/all?keyword=" + encodeURIComponent(q);
@@ -795,13 +882,14 @@ function render() {
       "<div class='hero-home'><span class='kicker'>今天吃什么</span>" +
       "<h1>别纠结了，<em>我帮你挑</em></h1>" +
       "<p class='sub'>回答几个问题，或者告诉我冰箱里有什么。</p></div>" +
+      "<button class='home-search' data-go='search'><span class='hs-ico'>🔍</span>" +
+      "<span class='hs-t'>搜菜名、食材</span><span class='hs-n'>" + DISHES.length + " 道</span><span class='hs-a'>›</span></button>" +
       bigBtn("a", "🤔", "不知道吃什么", "问几个问题，按口味挑菜", "quiz") +
       bigBtn("b", "🥕", "家里有食材", "告诉我你有什么，我报菜名", "pantry") +
       bigBtn("c", "🔥", "今日推荐", "两组各 4 道，挑一组就走", "daily") +
       bigBtn("d", "📚", "学习指南", "从初级到大师，跟着视频练", "learn") +
       bigBtn("e", "🎯", "直接来一批", "不问条件，随便抽几道", "spin") +
       recentStrip() +
-      "<button class='home-link' data-go='search'>🔍 搜菜名、食材<span>" + DISHES.length + " 道</span>›</button>" +
       "<button class='home-link' data-go='saved'>★ 我的收藏<span>" + state.saved.size + " 道</span>›</button>" +
       "<button class='home-link' data-go='profile'>⚙ 口味档案<span>不想吃 " + state.disliked.size + " · 吃过 " + (state.eaten || []).length + "</span>›</button>" +
       installTip() +
@@ -986,8 +1074,9 @@ function render() {
   }
 
   if (state.screen === "daily") {
-    const cur = DAILY.groups.find((g) => g.id === state.dailyGroup) || null;
-    const picks = DAILY.groups.map((g) =>
+    const D = getDaily();
+    const cur = D.groups.find((g) => g.id === state.dailyGroup) || null;
+    const picks = D.groups.map((g) =>
       "<button class='daily-pick" + (cur && cur.id === g.id ? " on" : "") + "' data-daily='" + g.id + "'>" +
       "<span class='dp-t'>" + g.title + "</span><span class='dp-n'>" + g.items.length + " 道</span></button>").join("");
     let body = "";
@@ -997,10 +1086,10 @@ function render() {
     }
     v.innerHTML = "<div class='screen'>" +
       "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
-      "<div class='result-head'><h2>今日推荐</h2><span class='pill'>" + DAILY.updated + "</span></div></div>" +
+      "<div class='result-head'><h2>今日推荐</h2><span class='pill'>" + monthOf() + " 月</span></div></div>" +
       "<div class='daily-picks'>" + picks + "</div>" +
-      (cur ? body : "<p class='daily-hint'>点一组，看这 " + DAILY.groups[0].items.length + " 道。</p>") +
-      (dailyStale() ? "<p class='foot-note'>这组是 " + DAILY.updated + "整理的，每月换一批；看到下个月就是旧的。</p>" : "") +
+      (cur ? body : "<p class='daily-hint'>点一组，看这 " + D.groups[0].items.length + " 道。</p>") +
+      "<p class='foot-note'>按当季食材从 " + DISHES.length + " 道里算的，每天自动换一批。</p>" +
       "</div>";
   }
 

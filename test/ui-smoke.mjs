@@ -45,6 +45,7 @@ const checks = [];
 const ok = (name, cond) => { checks.push([name, !!cond]); if (!cond) console.log("  ✗ " + name); };
 
 ok("首屏渲染出三个入口", html().includes("不知道吃什么") && html().includes("家里有食材"));
+ok("搜索入口排在最上面", html().indexOf("home-search") > 0 && html().indexOf("home-search") < html().indexOf("class='big"));
 click({ go: "quiz" });
 ok("进答题页", html().includes("1 / ") && html().includes("class='opt"));
 // 一路答题直到进入 soft
@@ -93,11 +94,15 @@ click({ go: "daily" });
 ok("今日推荐先给两个入口", (html().match(/data-daily=/g) || []).length === 2 && (html().match(/class='dish'/g) || []).length === 0);
 ok("今日推荐没有刷新按钮", !html().includes("刷新换一批"));
 ok("今日推荐不再有说明长句", !html().includes("不刷新。都是好上手"));
+ok("今日推荐按季节算组名", html().includes("这个月正当时"));
 click({ daily: "hot" });
 ok("选组后出 4 道", (html().match(/class='dish'/g) || []).length === 4);
 ok("今日推荐有推荐理由", html().includes("class='why'"));
+const hotIds = [...new Set((html().match(/data-id='([^']+)'/g) || []).map((s) => s.match(/'([^']+)'/)[1]))];
 click({ daily: "light" });
 ok("切到清爽养胃也 4 道", (html().match(/class='dish'/g) || []).length === 4 && html().includes("清爽养胃"));
+const lightIds = [...new Set((html().match(/data-id='([^']+)'/g) || []).map((s) => s.match(/'([^']+)'/)[1]))];
+ok("两组推荐不重复", hotIds.length === 4 && lightIds.length === 4 && !lightIds.some((id) => hotIds.includes(id)));
 ok("旧的养身体的文案已删", !html().includes("养身体的"));
 
 // ----- 学习指南 -----

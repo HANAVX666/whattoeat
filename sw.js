@@ -1,4 +1,4 @@
-const VERSION = "v350-cook";
+const VERSION = "v351-daily";
 const CACHE = "eat-" + VERSION;
 const IMG_CACHE = "eat-img-v1";
 const SHELL = [

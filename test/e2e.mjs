@@ -68,7 +68,8 @@ async function main() {
 
   // 首页入口
   ok("首页 5 个主入口", (await ev("document.querySelectorAll('.big').length")) === 5, await ev("document.querySelectorAll('.big').length"));
-  ok("首页有搜索/收藏/口味档案", (await ev("document.querySelectorAll('.home-link').length")) === 3);
+  ok("首页有搜索/收藏/口味档案", (await ev("document.querySelectorAll('.home-search').length + document.querySelectorAll('.home-link').length")) === 3);
+  ok("搜索入口在第一个入口之前", (await ev("!!document.querySelector('.home-search') && document.querySelectorAll('.home-search')[0].compareDocumentPosition(document.querySelector('.big')) === 4")) === true);
   await shot("v350-home-light.png");
 
   // 搜索
@@ -125,8 +126,12 @@ async function main() {
   await nav("http://127.0.0.1:" + PORT + "/?e2e=daily");
   await click("[data-go='daily']");
   ok("今日推荐两组按钮", (await ev("document.querySelectorAll('[data-daily]').length")) === 2);
+  ok("推荐按季节生成组名", (await text("#app")).includes("这个月正当时"));
   await click("[data-daily='hot']");
   ok("一组 4 道", (await ev("document.querySelectorAll('.dish').length")) === 4);
+  ok("推荐卡片都有做法可看", (await ev("[...document.querySelectorAll('.dish')].every((x) => x.dataset.id && x.querySelector('.dish-name'))")) === true);
+  console.log("  今日推荐：", await ev("[...document.querySelectorAll('.dish .dish-name')].map((x) => x.textContent).join('、')"));
+  await shot("v350-daily.png");
 
   // 暗色模式
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });

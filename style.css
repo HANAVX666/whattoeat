@@ -304,6 +304,15 @@ input[type=text]:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 4px
   box-shadow:var(--sh-1)}
 .home-link span{margin-left:auto;color:var(--muted);font-size:13px}
 
+.home-search{display:flex;align-items:center;gap:10px;width:100%;margin:2px 0 16px;padding:15px 16px;
+  border:1px solid var(--line);border-radius:16px;background:var(--card);
+  font-family:inherit;cursor:pointer;text-align:left;box-shadow:var(--sh-1);transition:background .15s}
+.home-search:active{background:var(--red-soft)}
+.hs-ico{font-size:16px;line-height:1}
+.hs-t{font-size:15px;color:var(--muted)}
+.hs-n{margin-left:auto;color:var(--muted);font-size:12.5px}
+.hs-a{color:var(--muted);font-size:16px;margin-left:2px}
+
 
 /* ---------- 真实照片灯箱（v312） ---------- */
 .hero img.cover{opacity:0;transition:opacity .45s var(--ease)}
