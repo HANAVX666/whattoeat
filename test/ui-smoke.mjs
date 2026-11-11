@@ -37,6 +37,7 @@ const click = (dataset) => {
   handlers.click({ target: { closest: () => t } });
 };
 const html = () => appEl.innerHTML;
+const tick = (ms = 40) => new Promise((r) => setTimeout(r, ms));
 
 await new Promise((r) => setTimeout(r, 50)); // 等数据加载完
 
@@ -64,7 +65,8 @@ ok("结果页有卡片", (html().match(/class='dish'/g) || []).length > 0);
 ok("结果页有刷新按钮", html().includes("刷新换一批"));
 const firstId = (html().match(/data-id='([^']+)'/g) || [])[0];
 click({ id: firstId.match(/'([^']+)'/)[1] });
-ok("详情页有做法", html().includes("做法") && html().includes("class='steps'") && html().includes("class='step'"));
+await tick();
+ok("详情页有做法", html().includes("做法") && html().includes("class='steps'") && html().includes("class='step'") && !html().includes("做法加载中"));
 click({ go: "back" });
 ok("从详情返回结果页", html().includes("刷新换一批"));
 
@@ -141,12 +143,14 @@ click({ go: "back" });
 ok("再返回回到结果页", mod.state.screen === "result");
 
 click({ id: sId });
+await tick();
 click({ eat: sId });
 ok("吃过了状态写进 state", (mod.state.eaten || []).some((x) => x.id === sId));
 click({ eat: sId });
 ok("再点一次能取消吃过了", !(mod.state.eaten || []).some((x) => x.id === sId));
 
 click({ copy: sId });
+await tick();
 ok("复制失败时给出可复制的文字", html().includes("复制这段") && html().includes("做法"));
 click({ sheetClose: "" });
 ok("关闭弹层", !html().includes("复制这段"));
@@ -170,6 +174,46 @@ ok("取消后分类还在", html().includes("data-folder='want'"));
 click({ drop: "want" });
 click({ dropConfirm: "want" });
 ok("确认后分类消失", !html().includes("data-folder='want'"));
+
+// ----- 搜索（m04087 第 2 条） -----
+click({ go: "home" });
+ok("首页有搜索入口", html().includes("data-go='search'"));
+click({ go: "search" });
+ok("搜索页有输入框和常见食材", html().includes("id='searchq'") && html().includes("常见食材"));
+mod.state.query = "番茄";
+mod.render();
+ok("搜「番茄」出结果", (html().match(/class='dish'/g) || []).length > 0 && html().includes("番茄"));
+mod.state.query = "zzzz";
+mod.render();
+ok("搜不到给提示", html().includes("没找到"));
+mod.state.query = "番茄";
+mod.render();
+const fId = (html().match(/data-id='([^']+)'/g) || [])[0].match(/'([^']+)'/)[1];
+
+// ----- 口味档案：撤销「不想吃」（m04087 第 1 条） -----
+click({ id: fId });
+await tick();
+click({ dislike: fId });
+ok("标记不想吃", mod.state.disliked.has(fId));
+click({ go: "home" });
+ok("首页有口味档案入口", html().includes("data-go='profile'"));
+click({ go: "profile" });
+ok("口味档案列出不想吃", html().includes("不想吃") && html().includes("data-undislike='" + fId + "'"));
+click({ undislike: fId });
+ok("恢复后从不想吃里移除", !mod.state.disliked.has(fId));
+
+// ----- 结果页解释排序 / 刷到底（m04087 第 4、5 条） -----
+click({ go: "home" });
+click({ go: "spin" });
+ok("结果页解释了排序依据", html().includes("按大众度挑的") && html().includes("还有"));
+let guard2 = 0;
+while (!mod.state.exhausted && guard2++ < 400) mod.pick(false);
+mod.render();
+ok("刷到底给出看完了的提示", mod.state.exhausted && html().includes("都看过了") && html().includes("从头再看一遍"));
+ok("刷到底不再重复同一批", (html().match(/class='dish'/g) || []).length === 0);
+click({ go: "restartBatch" });
+await tick();
+ok("从头再看一遍能重新出卡", (html().match(/class='dish'/g) || []).length > 0);
 
 const bad = checks.filter((c) => !c[1]);
 console.log(bad.length ? "FAIL " + bad.length + " / " + checks.length : "OK 全部通过（" + checks.length + " 项）");

@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -93,4 +93,21 @@ if (errors.length) {
   process.exit(1);
 }
 writeFileSync(join(root, "data/index.json"), JSON.stringify({ files, count: dishes.length }, null, 2) + "\n");
+// 首屏只读 lite.json（不含做法，约 1/3 体积）；做法进详情页再按批次拉
+const lite = dishes.map((d) => {
+  const o = {};
+  for (const k of REQ) if (k !== "steps" && k !== "tips") o[k] = d[k];
+  o.b = d.__file;
+  return o;
+});
+writeFileSync(join(root, "data/lite.json"), JSON.stringify(lite) + "\n");
+const stepDir = join(root, "data/steps");
+rmSync(stepDir, { recursive: true, force: true });
+mkdirSync(stepDir, { recursive: true });
+for (const f of files) {
+  const obj = {};
+  for (const d of dishes) if (d.__file === f) obj[d.id] = { steps: d.steps, tips: d.tips };
+  writeFileSync(join(stepDir, f), JSON.stringify(obj) + "\n");
+}
+
 console.log("\nOK 全部通过" + (gaps.length ? "（缺口不阻塞）" : ""));

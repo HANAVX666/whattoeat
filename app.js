@@ -1,4 +1,5 @@
 const $ = (s, r = document) => r.querySelector(s);
+const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const SEARCH = {
   img: (n) => "https://cn.bing.com/images/search?q=" + encodeURIComponent(n + " 成品"),
   recipes: (n) => "https://www.xiachufang.com/search/?keyword=" + encodeURIComponent(n),
@@ -10,7 +11,7 @@ let PHOTOS = {};
 let photosReady = false;
 let photosLoading = null;
 let THUMBS = new Set();
-const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), saved: new Set(), eaten: [], batch: [], reasons: new Map(), refresh: 0, pantryText: "", collections: [], stack: [], folder: null, sheet: null, learnLevel: "初", current: null, dailyGroup: null, game: null };
+const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), saved: new Set(), eaten: [], batch: [], reasons: new Map(), refresh: 0, pantryText: "", collections: [], stack: [], folder: null, sheet: null, learnLevel: "初", current: null, dailyGroup: null, query: "", stepsMiss: new Set(), exhausted: false, poolN: 0, remaining: 0 };
 
 const QUESTIONS = [
   { id: "src", q: "今天自己做，还是点外卖？", opts: [["自己动手做", "cook"], ["点外卖 / 出去吃", "out"], ["都行", "any"]] },
@@ -279,6 +280,37 @@ const hardPool = (a) => DISHES.filter((d) => {
   return !state.disliked.has(d.id);
 });
 
+function searchHits(q) {
+  const s = String(q || "").trim().toLowerCase();
+  if (!s) return [];
+  const out = [];
+  for (const d of DISHES) {
+    let sc = 0;
+    const nm = d.name.toLowerCase();
+    if (nm === s) sc = 100;
+    else if (nm.startsWith(s)) sc = 80;
+    else if (nm.includes(s)) sc = 60;
+    else if ((d.aliases || []).some((a) => a.toLowerCase().includes(s))) sc = 45;
+    else if (d.mainIngredients.some((x) => x.includes(s))) sc = 30;
+    else if ((d.tags || []).some((t) => t.includes(s))) sc = 15;
+    if (sc) out.push([d, sc + d.popularity]);
+  }
+  return out.sort((a, b) => b[1] - a[1]).map((x) => x[0]).slice(0, 60);
+}
+
+function hitsHtml(q) {
+  const s = String(q || "").trim();
+  if (!s) {
+    const quick = topIngredients(12);
+    return "<div class='group-title'>常见食材</div><div class='chips'>" +
+      quick.map((x) => "<button class='chipbtn' data-fillq='" + esc(x) + "'>" + esc(x) + "</button>").join("") + "</div>" +
+      "<p class='foot-note'>菜库 " + DISHES.length + " 道，输入一个字就开始筛。</p>";
+  }
+  const hits = searchHits(s);
+  if (!hits.length) return "<div class='empty'><span class='big-emoji'>🔍</span>没找到「" + esc(s) + "」。<br>换个说法，或者只输入一个字试试。</div>";
+  return "<div class='grid'>" + hits.map((d, i) => card(d, i)).join("") + "</div>";
+}
+
 function pick(reset) {
   let pool = hardPool(state.answers);
   if (state.answers.food && state.answers.food.length) {
@@ -286,10 +318,12 @@ function pick(reset) {
     if (hit.length) pool = hit;
   }
   if (reset) { state.shown = new Set(); state.refresh = 0; }
-  if (!pool.length) { state.batch = []; state.reasons = new Map(); return; }
-  if (pool.every((d) => state.shown.has(d.id))) { state.shown = new Set(); state.refresh = 0; }
+  state.poolN = pool.length;
+  if (!pool.length) { state.batch = []; state.reasons = new Map(); state.exhausted = false; state.remaining = 0; return; }
 
   const rest = pool.filter((d) => !state.shown.has(d.id));
+  if (!rest.length) { state.batch = []; state.reasons = new Map(); state.exhausted = true; state.remaining = 0; return; }
+  state.exhausted = false;
   // 越往后越冷门：第 n 批开始收紧「大众度上限」，池子不够 30 道就放开，避免没菜可推
   const n = state.refresh || 0;
   const CEIL = [5.5, 5.5, 4.8, 4.2, 3.8, 3.4, 3.0, 2.6, 2.3];
@@ -325,9 +359,10 @@ function pick(reset) {
   state.reasons = new Map(out.map((x) => [x.d.id, x.why]));
   state.batch.forEach((d) => state.shown.add(d.id));
   state.refresh = (state.refresh || 0) + 1;
+  state.remaining = pool.filter((d) => !state.shown.has(d.id)).length;
 }
 
-function condChips() {
+function condList() {
   const a = state.answers, c = [];
   if (a.src === "cook") c.push("自己做");
   if (a.src === "out") c.push("外卖");
@@ -356,6 +391,11 @@ function condChips() {
   if (a.equip === "oven") c.push("有烤箱");
   if (a.equip === "basic") c.push("一口锅");
   for (const k of state.soft || []) c.push(SOFT_MAP[k] || k.slice(k.indexOf(":") + 1));
+  return c.filter(Boolean);
+}
+
+function condChips() {
+  const c = condList();
   if (!c.length) return "";
   return "<div class='conds'>" + c.map((x) => "<span>" + x + "</span>").join("") + "</div>";
 }
@@ -561,12 +601,13 @@ function toast(msg) {
   } catch (e) {}
 }
 
-function copyText(id) {
-  const d = DISHES.find((x) => x.id === id);
-  if (!d) return;
-  const text = "「" + d.name + "」做法（" + d.timeMin + " 分钟 · " + d.method + "）\n" +
-    d.steps.map((s, i) => (i + 1) + ". " + s).join("\n") +
+function recipeText(d) {
+  return "「" + d.name + "」做法（" + d.timeMin + " 分钟 · " + d.method + "）\n" +
+    (d.steps || []).map((s, i) => (i + 1) + ". " + s).join("\n") +
     (d.tips ? "\n💡 " + d.tips : "") + "\n—— 来自「今天吃什么」";
+}
+
+function doCopy(text) {
   const fallback = () => { state.sheet = { type: "copy", text }; render(); };
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -577,7 +618,20 @@ function copyText(id) {
   fallback();
 }
 
+function copyText(id) {
+  const d = DISHES.find((x) => x.id === id);
+  if (!d) return;
+  if (!d.steps) {
+    ensureSteps(d).then(() => { if (d.steps) doCopy(recipeText(d)); else toast("做法还没加载出来，稍后再试"); });
+    return;
+  }
+  doCopy(recipeText(d));
+}
+
 /* ---------- 今日推荐（人工精选，不刷新） ---------- */
+const DAILY_MONTH = 11; // 这组数据整理的月份
+const dailyStale = () => { try { return (new Date().getMonth() + 1) !== DAILY_MONTH; } catch (e) { return false; } };
+
 const DAILY = {
   updated: "11 月",
   groups: [
@@ -747,7 +801,9 @@ function render() {
       bigBtn("d", "📚", "学习指南", "从初级到大师，跟着视频练", "learn") +
       bigBtn("e", "🎯", "直接来一批", "不问条件，随便抽几道", "spin") +
       recentStrip() +
+      "<button class='home-link' data-go='search'>🔍 搜菜名、食材<span>" + DISHES.length + " 道</span>›</button>" +
       "<button class='home-link' data-go='saved'>★ 我的收藏<span>" + state.saved.size + " 道</span>›</button>" +
+      "<button class='home-link' data-go='profile'>⚙ 口味档案<span>不想吃 " + state.disliked.size + " · 吃过 " + (state.eaten || []).length + "</span>›</button>" +
       installTip() +
       "<p class='foot-note'>菜库 " + DISHES.length + " 道 · 点过「不想吃」的不会再出现</p>" +
     "</div>";
@@ -799,23 +855,44 @@ function render() {
 
   if (state.screen === "result") {
     if (!state.batch.length) {
-      v.innerHTML = "<div class='screen'><div class='topbar'><button class='back' data-go='home'>‹</button></div>" +
-        "<div class='empty'><span class='big-emoji'>🥲</span>筛得太狠了，一道都不剩。<br>回去放宽一个条件试试。</div>" +
-        "<button class='btn block' data-go='quiz'>改一下答案</button></div>";
+      const body = state.exhausted
+        ? "<div class='empty'><span class='big-emoji'>🍽</span>符合条件的 " + state.poolN + " 道都看过了。<br>换一下条件，或者从头再看一遍。</div>" +
+          "<button class='btn block' data-go='quiz'>改一下答案</button>" +
+          "<button class='btn block' data-go='restartBatch'>从头再看一遍</button>"
+        : "<div class='empty'><span class='big-emoji'>🥲</span>筛得太狠了，一道都不剩。<br>回去放宽一个条件试试。</div>" +
+          "<button class='btn block' data-go='quiz'>改一下答案</button>";
+      v.innerHTML = "<div class='screen'><div class='topbar'><button class='back' data-go='home'>‹</button></div>" + body + "</div>";
     } else {
       const tag = state.refresh > 1 ? "第 " + state.refresh + " 批" : "按条件排的";
+      const conds = condList();
+      const sub = conds.length
+        ? "按上面 " + conds.length + " 个条件排序，勾得越准越贴。不满意就换一批——越往后越冷门。"
+        : "没加条件，按大众度挑的。不满意就换一批——越往后越冷门。";
+      const left = state.remaining || 0;
+      const foot = (left > 0 ? "还有 " + left + " 道没看过" : "这批之后没有新的了，再点刷新会从头开始") + " · 点过「不想吃」的不会再出现";
       v.innerHTML = "<div class='screen'>" +
         "<div class='topbar'><button class='back' data-go='quiz' aria-label='改答案'>‹</button>" +
         "<div class='result-head'><h2>" + (MEAL_TITLE[state.answers.meal] || "今天可以吃这些") + "</h2><span class='pill'>" + tag + "</span></div></div>" +
         condChips() +
-        "<p class='result-sub'>点一道看做法，不满意就换一批——越往后越冷门。</p>" +
+        "<p class='result-sub'>" + sub + "</p>" +
         "<div class='grid'>" + state.batch.map((d, i) => card(d, i)).join("") + "</div>" +
-        "<p class='foot-note'>点过「不想吃」的不会再出现</p>" +
+        "<p class='foot-note'>" + foot + "</p>" +
         "<div class='sticky'><div class='inner'>" +
         "<button class='btn' data-go='one'>🎡 转盘定一个</button>" +
         "<button class='btn primary' data-go='refresh'>🎲 刷新换一批</button>" +
         "</div></div></div>";
     }
+  }
+
+  if (state.screen === "search") {
+    const q = state.query || "";
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
+      "<h2 style='flex:1;font-size:19px'>搜索</h2><span class='pill' id='hitcount'>" +
+      (q.trim() ? searchHits(q).length + " 道" : "菜名 / 食材") + "</span></div>" +
+      "<div class='search-box'><input id='searchq' type='search' enterkeyhint='search' placeholder='搜菜名、别名或食材，比如 番茄、牛腩' value='" + esc(q) + "'></div>" +
+      "<div id='hitwrap'>" + hitsHtml(q) + "</div>" +
+      "</div>";
   }
 
   if (state.screen === "pantry") {
@@ -831,9 +908,13 @@ function render() {
 
   if (state.screen === "pantryResult") {
     if (!state.batch.length) {
-      v.innerHTML = "<div class='screen'><div class='topbar'><button class='back' data-go='pantry'>‹</button></div>" +
-        "<div class='empty'><span class='big-emoji'>🍳</span>库里暂时没有用这些食材的菜。<br>试试少写两样，或者换一个。</div>" +
-        "<button class='btn block' data-go='pantry'>改一下食材</button></div>";
+      const body = state.exhausted
+        ? "<div class='empty'><span class='big-emoji'>🍳</span>用这些食材的 " + state.poolN + " 道都看过了。<br>换几样食材，或者从头再看一遍。</div>" +
+          "<button class='btn block' data-go='pantry'>改一下食材</button>" +
+          "<button class='btn block' data-go='restartBatch'>从头再看一遍</button>"
+        : "<div class='empty'><span class='big-emoji'>🍳</span>库里暂时没有用这些食材的菜。<br>试试少写两样，或者换一个。</div>" +
+          "<button class='btn block' data-go='pantry'>改一下食材</button>";
+      v.innerHTML = "<div class='screen'><div class='topbar'><button class='back' data-go='pantry'>‹</button></div>" + body + "</div>";
     } else {
       v.innerHTML = "<div class='screen'>" +
         "<div class='topbar'><button class='back' data-go='pantry' aria-label='改食材'>‹</button>" +
@@ -880,6 +961,30 @@ function render() {
       "</div>";
   }
 
+  if (state.screen === "profile") {
+    const dis = [...state.disliked].map((id) => DISHES.find((d) => d.id === id)).filter(Boolean);
+    const ate = (state.eaten || []).map((e) => ({ d: DISHES.find((d) => d.id === e.id), ts: e.ts })).filter((x) => x.d);
+    const dayStr = (ts) => {
+      const n = Math.floor((Date.now() - ts) / 86400000);
+      return n <= 0 ? "今天" : n === 1 ? "昨天" : n + " 天前";
+    };
+    const row = (d, sub, action, attr) =>
+      "<div class='folder-row'><div class='folder-open static'><span class='fname'>" + d.name + "</span>" +
+      "<span class='fsub'>" + sub + "</span></div>" +
+      "<button class='fedit' " + attr + "='" + d.id + "'>" + action + "</button></div>";
+    const disRows = dis.map((d) => row(d, d.region + "菜 · " + d.timeMin + " 分钟", "恢复", "data-undislike")).join("");
+    const ateRows = ate.map((x) => row(x.d, dayStr(x.ts) + " 吃过", "清除", "data-uneat")).join("");
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
+      "<h2 style='flex:1;font-size:19px'>口味档案</h2></div>" +
+      "<p class='result-sub'>点过「不想吃」的菜会从推荐里消失，想恢复点右边的字。</p>" +
+      "<div class='group-title'>不想吃<span class='n'>" + dis.length + "</span></div>" +
+      (dis.length ? "<div class='folders'>" + disRows + "</div>" : "<p class='daily-hint'>还没有排除任何菜。</p>") +
+      "<div class='group-title' style='margin-top:26px'>最近吃过<span class='n'>" + ate.length + "</span></div>" +
+      (ate.length ? "<div class='folders'>" + ateRows + "</div>" : "<p class='daily-hint'>还没记录过。</p>") +
+      "<p class='foot-note'>这些记录只存在这台设备上。</p></div>";
+  }
+
   if (state.screen === "daily") {
     const cur = DAILY.groups.find((g) => g.id === state.dailyGroup) || null;
     const picks = DAILY.groups.map((g) =>
@@ -895,6 +1000,7 @@ function render() {
       "<div class='result-head'><h2>今日推荐</h2><span class='pill'>" + DAILY.updated + "</span></div></div>" +
       "<div class='daily-picks'>" + picks + "</div>" +
       (cur ? body : "<p class='daily-hint'>点一组，看这 " + DAILY.groups[0].items.length + " 道。</p>") +
+      (dailyStale() ? "<p class='foot-note'>这组是 " + DAILY.updated + "整理的，每月换一批；看到下个月就是旧的。</p>" : "") +
       "</div>";
   }
 
@@ -949,9 +1055,13 @@ function render() {
        "<span class='chip'>" + spicyWord[d.spicy] + "</span>", "<span class='chip'>" + d.method + "</span>",
        "<span class='chip'>" + d.timeMin + " 分钟</span>",
        "<span class='chip'>" + ["", "简单", "一般", "讲究"][d.difficulty] + "</span>"].join("") + "</div>" +
-      "<h3 style='margin-bottom:10px'>做法</h3><div class='steps'>" +
-      d.steps.map((s, i) => "<div class='step'><span class='n'>" + (i + 1) + "</span><span class='txt'>" + s + "</span></div>").join("") +
-      "</div>" + (d.tips ? "<div class='tip'>💡 " + d.tips + "</div>" : "") +
+      "<h3 style='margin-bottom:10px'>做法</h3>" +
+      (d.steps
+        ? "<div class='steps'>" + d.steps.map((s, i) => "<div class='step'><span class='n'>" + (i + 1) + "</span><span class='txt'>" + s + "</span></div>").join("") + "</div>" +
+          (d.tips ? "<div class='tip'>💡 " + d.tips + "</div>" : "")
+        : state.stepsMiss.has(d.id)
+          ? "<div class='empty'><span class='big-emoji'>📄</span>做法没加载出来。<br>点下面的「找菜谱」看网页版。</div>"
+          : "<div class='steps'><div class='step'><span class='n'>…</span><span class='txt'>做法加载中…</span></div></div>") +
       "<div class='actions'>" +
       "<button class='btn" + (sv ? " primary" : "") + "' data-save='" + d.id + "'>" + (sv ? "★ 已收藏" : "☆ 收藏") + "</button>" +
       "<button class='btn" + (ate ? " done" : "") + "' data-eat='" + d.id + "'>" + (ate ? "✓ 今天吃过了" : "🍽 吃过了") + "</button></div>" +
@@ -962,6 +1072,9 @@ function render() {
       "<a class='btn' href='" + SEARCH.recipes(d.name) + "' target='_blank' rel='noopener'>📖 找菜谱</a>" +
       "<a class='btn primary' href='" + SEARCH.video(d.name) + "' target='_blank' rel='noopener'>▶ 看视频</a>" +
       "</div></div></div>";
+    if (!d.steps && !state.stepsMiss.has(d.id)) {
+      ensureSteps(d).then(() => { if (state.screen === "detail" && state.current === d.id) render(); });
+    }
   }
 
   const shHtml = sheetHtml();
@@ -998,6 +1111,35 @@ function ensurePhotos() {
     .then((j) => { PHOTOS = j || {}; photosReady = true; return PHOTOS; })
     .catch(() => { PHOTOS = {}; photosReady = true; return PHOTOS; });
   return photosLoading;
+}
+
+const stepsCache = new Map();
+const stepsLoading = new Map();
+
+function applySteps(b) {
+  const j = stepsCache.get(b);
+  if (!j) return false;
+  let n = 0;
+  for (const d of DISHES) {
+    if (d.b === b && j[d.id] && !d.steps) { d.steps = j[d.id].steps; d.tips = j[d.id].tips; n++; }
+  }
+  return n > 0;
+}
+
+// 做法不进首屏：lite.json 只有菜名/标签/食材，进详情页才按批次拉
+function ensureSteps(d) {
+  if (!d) return Promise.resolve(false);
+  if (d.steps) return Promise.resolve(true);
+  if (!d.b) { state.stepsMiss.add(d.id); return Promise.resolve(false); }
+  if (stepsCache.has(d.b)) { applySteps(d.b); return Promise.resolve(!!d.steps); }
+  if (stepsLoading.has(d.b)) return stepsLoading.get(d.b).then(() => !!d.steps);
+  const p = fetch("./data/steps/" + d.b)
+    .then((r) => r.json())
+    .then((j) => { stepsCache.set(d.b, j || {}); applySteps(d.b); })
+    .catch(() => {})
+    .then(() => { stepsLoading.delete(d.b); if (!d.steps) state.stepsMiss.add(d.id); return !!d.steps; });
+  stepsLoading.set(d.b, p);
+  return p;
 }
 
 function openPhoto(id, i) {
@@ -1170,7 +1312,7 @@ document.addEventListener("click", (e) => {
     else openPhoto(lbState.id, lbState.i + 1);
     return;
   }
-  const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft],[data-save],[data-star],[data-eat],[data-copy],[data-photo],[data-folder],[data-rename],[data-drop],[data-newfolder],[data-folder-save],[data-folder-remove],[data-drop-confirm],[data-lvl],[data-daily]");
+  const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft],[data-save],[data-star],[data-eat],[data-copy],[data-photo],[data-folder],[data-rename],[data-drop],[data-newfolder],[data-folder-save],[data-folder-remove],[data-drop-confirm],[data-lvl],[data-daily],[data-undislike],[data-uneat],[data-fillq]");
   if (!t) return;
   if (t.dataset.photo) {
     const id = t.dataset.photo;
@@ -1213,6 +1355,24 @@ document.addEventListener("click", (e) => {
     return render();
   }
   if (t.dataset.copy) { return copyText(t.dataset.copy); }
+  if (t.dataset.undislike !== undefined) {
+    const id = t.dataset.undislike;
+    state.disliked.delete(id);
+    try { localStorage.setItem("disliked", JSON.stringify([...state.disliked])); } catch (e) {}
+    toast("已恢复，这道会重新出现");
+    return render();
+  }
+  if (t.dataset.uneat !== undefined) {
+    unmarkEaten(t.dataset.uneat);
+    return render();
+  }
+  if (t.dataset.fillq !== undefined) {
+    state.query = t.dataset.fillq;
+    const inp = $("#searchq"); if (inp) inp.value = state.query;
+    const wrap = $("#hitwrap"); if (wrap) wrap.innerHTML = hitsHtml(state.query);
+    const cnt = $("#hitcount"); if (cnt) cnt.textContent = searchHits(state.query).length + " 道";
+    return;
+  }
   if (t.dataset.eat) {
     const id = t.dataset.eat;
     const on = daysSinceEaten(id) >= 1;
@@ -1305,6 +1465,14 @@ document.addEventListener("click", (e) => {
   else if (go === "refresh") { state.screen = "result"; pick(false); }
   else if (go === "spin") { state.answers = {}; state.soft = new Set(); state.shown = new Set(); state.screen = "result"; pick(true); }
   else if (go === "saved") { state.screen = "saved"; }
+  else if (go === "search") { state.screen = "search"; state.query = ""; }
+  else if (go === "profile") { state.screen = "profile"; }
+  else if (go === "restartBatch") {
+    const pantry = state.screen === "pantryResult" || !!(state.answers.food && state.answers.food.length);
+    state.shown = new Set(); state.refresh = 0; state.exhausted = false;
+    state.screen = pantry ? "pantryResult" : "result";
+    pick(true);
+  }
   else if (go === "daily") { state.screen = "daily"; }
   else if (go === "learn") { state.screen = "learn"; }
   else if (go === "games") { state.screen = "games"; }
@@ -1324,7 +1492,16 @@ document.addEventListener("click", (e) => {
   render();
 });
 
-document.addEventListener("input", (e) => { if (e.target.id === "pantry") state.pantryText = e.target.value; });
+document.addEventListener("input", (e) => {
+  if (e.target.id === "pantry") state.pantryText = e.target.value;
+  if (e.target.id === "searchq") {
+    state.query = e.target.value;
+    const wrap = document.getElementById ? document.getElementById("hitwrap") : null;
+    const cnt = document.getElementById ? document.getElementById("hitcount") : null;
+    if (wrap) wrap.innerHTML = hitsHtml(state.query);
+    if (cnt) cnt.textContent = state.query.trim() ? searchHits(state.query).length + " 道" : "菜名 / 食材";
+  }
+});
 
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
@@ -1333,11 +1510,19 @@ document.addEventListener("keydown", (e) => {
   closePhoto();
 });
 
+async function loadDishes() {
+  try {
+    const lite = await (await fetch("./data/lite.json")).json();
+    if (Array.isArray(lite) && lite.length) return lite;
+  } catch (e) {}
+  const idx = await (await fetch("./data/index.json")).json();
+  const lists = await Promise.all(idx.files.map((f) => fetch("./data/dishes/" + f).then((r) => r.json())));
+  return lists.flat();
+}
+
 (async () => {
   try {
-    const idx = await (await fetch("./data/index.json")).json();
-    const lists = await Promise.all(idx.files.map((f) => fetch("./data/dishes/" + f).then((r) => r.json())));
-    DISHES = lists.flat();
+    DISHES = await loadDishes();
     try { THUMBS = new Set(await (await fetch("./data/thumbs.json")).json()); } catch (e) { THUMBS = new Set(); }
   } catch (err) {
     $("#app").innerHTML = "<div class='empty'>菜谱库加载失败。<br>请用本地服务器打开。</div>";

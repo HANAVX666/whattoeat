@@ -9,6 +9,8 @@
     "images": "node scripts/images.mjs",
     "icons": "node scripts/make-icons.mjs",
     "build": "node scripts/build-dist.mjs",
-    "start": "node server.mjs"
+    "start": "node server.mjs",
+    "test": "node test/ui-smoke.mjs",
+    "e2e": "node test/e2e.mjs"
   }
 }

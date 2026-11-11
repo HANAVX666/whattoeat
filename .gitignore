@@ -69,3 +69,5 @@ apk/
 .msg.txt
 .photos.log
 .photos.pid
+
+.e2e.log
