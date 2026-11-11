@@ -55,10 +55,17 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: 收集产物
+      - name: 用固定签名重签 APK
         run: |
           mkdir -p out
-          cp android/app/build/outputs/apk/debug/app-debug.apk out/eatwha.apk
+          BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+          echo "build-tools: $BT"
+          "$ANDROID_HOME/build-tools/$BT/zipalign" -p -f 4 android/app/build/outputs/apk/debug/app-debug.apk out/eatwha-aligned.apk
+          "$ANDROID_HOME/build-tools/$BT/apksigner" sign \
+            --ks android-signing/eatwha.jks --ks-key-alias eatwha \
+            --ks-pass pass:eatwha2026 --key-pass pass:eatwha2026 \
+            --out out/eatwha.apk out/eatwha-aligned.apk
+          "$ANDROID_HOME/build-tools/$BT/apksigner" verify --print-certs out/eatwha.apk | head -n 6
           ls -lh out/eatwha.apk
 
       - uses: actions/upload-artifact@v4
@@ -74,5 +81,5 @@ jobs:
           gh release delete apk --yes --cleanup-tag || true
           gh release create apk out/eatwha.apk \
             --title "安卓安装包（最新）" \
-            --notes "下载 eatwha.apk，传到安卓手机点开安装即可。离线可用，不需要联网。" \
+            --notes "下载 eatwha.apk，传到安卓手机点开安装即可。离线可用，不需要联网。签名已固定，以后新版本可以直接覆盖安装；如果手机上装的是更早的测试版（签名不同），先卸载再装。" \
             --latest

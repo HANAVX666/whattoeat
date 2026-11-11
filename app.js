@@ -880,8 +880,7 @@ function render() {
   if (state.screen === "home") {
     v.innerHTML = "<div class='screen'>" +
       "<div class='hero-home'><span class='kicker'>今天吃什么</span>" +
-      "<h1>别纠结了，<em>我帮你挑</em></h1>" +
-      "<p class='sub'>回答几个问题，或者告诉我冰箱里有什么。</p></div>" +
+      "<h1>别纠结了，<em>我帮你挑</em></h1></div>" +
       "<button class='home-search' data-go='search'><span class='hs-ico'>🔍</span>" +
       "<span class='hs-t'>搜菜名、食材</span><span class='hs-n'>" + DISHES.length + " 道</span><span class='hs-a'>›</span></button>" +
       bigBtn("a", "🤔", "不知道吃什么", "问几个问题，按口味挑菜", "quiz") +
@@ -1065,7 +1064,6 @@ function render() {
     v.innerHTML = "<div class='screen'>" +
       "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
       "<h2 style='flex:1;font-size:19px'>口味档案</h2></div>" +
-      "<p class='result-sub'>点过「不想吃」的菜会从推荐里消失，想恢复点右边的字。</p>" +
       "<div class='group-title'>不想吃<span class='n'>" + dis.length + "</span></div>" +
       (dis.length ? "<div class='folders'>" + disRows + "</div>" : "<p class='daily-hint'>还没有排除任何菜。</p>") +
       "<div class='group-title' style='margin-top:26px'>最近吃过<span class='n'>" + ate.length + "</span></div>" +
@@ -1089,7 +1087,6 @@ function render() {
       "<div class='result-head'><h2>今日推荐</h2><span class='pill'>" + monthOf() + " 月</span></div></div>" +
       "<div class='daily-picks'>" + picks + "</div>" +
       (cur ? body : "<p class='daily-hint'>点一组，看这 " + D.groups[0].items.length + " 道。</p>") +
-      "<p class='foot-note'>按当季食材从 " + DISHES.length + " 道里算的，每天自动换一批。</p>" +
       "</div>";
   }
 
