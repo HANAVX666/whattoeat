@@ -67,3 +67,5 @@ tmp-*
 apk/
 .smoke.log
 .msg.txt
+.photos.log
+.photos.pid

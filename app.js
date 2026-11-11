@@ -15,6 +15,7 @@ const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new 
 const QUESTIONS = [
   { id: "src", q: "今天自己做，还是点外卖？", opts: [["自己动手做", "cook"], ["点外卖 / 出去吃", "out"], ["都行", "any"]] },
   { id: "meal", q: "这是今天的哪一顿？", opts: [["早饭", "breakfast"], ["午饭", "lunch"], ["晚饭", "dinner"], ["宵夜", "night"], ["都行", "any"]] },
+  { id: "people", q: "几个人吃？", opts: [["一个人吃", "1"], ["家里一起吃", "family"], ["有客人来", "party"], ["都行", "any"]] },
   { id: "route", q: "想吃哪个路子的菜？", opts: [["家常菜就行", "家常"], ["川湘：香辣下饭", "川湘"], ["粤闽：鲜甜本味", "粤闽"], ["江浙：清淡鲜嫩", "江浙"], ["西北：面食扎实", "西北"], ["都行", "any"]] },
   { id: "diet", q: "想吃荤的还是素的？", opts: [["想吃肉", "荤"], ["想吃素", "素"], ["都行，不挑", "any"]] },
   { id: "taste", q: "口味想清淡点还是够味？", opts: [["清淡一点", "清淡"], ["家常就行", "适中"], ["要够味", "重口"], ["都行", "any"]] },
@@ -23,6 +24,7 @@ const QUESTIONS = [
   { id: "novelty", q: "想吃常吃的，还是换换口味？", opts: [["就吃熟悉的", "familiar"], ["来点没试过的", "novel"], ["都行", "any"]] },
   { id: "form", q: "想吃哪一类？", opts: [["炒菜炖菜，配米饭", "菜"], ["汤和羹", "汤羹"], ["面、饭、饺子这类", "主食"], ["凉菜、小吃、卤味", "小吃"], ["都行", "any"]] },
   { id: "time", q: "能花多少时间？", when: (a) => a.src !== "out", opts: [["十分钟内", "10"], ["半小时左右", "30"], ["不着急", "999"], ["都行", "any"]] },
+  { id: "budget", q: "想省着点，还是吃好点？", opts: [["越便宜越好", "cheap"], ["差不多就行", "any"], ["想吃好点", "good"]] },
   { id: "equip", q: "厨房有什么家伙什？", when: (a) => a.src === "cook", opts: [["只有一口锅", "basic"], ["有烤箱或空气炸锅", "oven"], ["锅碗瓢盆都有", "any"]] }
 ];
 
@@ -43,6 +45,14 @@ const SOFT = [
   { label: "热乎暖胃", kind: "tag", v: "暖心" },
   { label: "想吃凉的", kind: "method", v: "凉拌" },
   { label: "想吃卤味", kind: "method", v: "卤" },
+  { label: "想吃炒的", kind: "method", v: "炒" },
+  { label: "想吃炖的", kind: "method", v: "炖煮" },
+  { label: "想吃蒸的", kind: "method", v: "蒸" },
+  { label: "想吃炸的", kind: "method", v: "炸" },
+  { label: "想吃煎烤的", kind: "method", v: "煎烤" },
+  { label: "想吃面饭", kind: "form", v: "主食" },
+  { label: "想吃炒菜", kind: "form", v: "菜" },
+  { label: "想吃凉菜小吃", kind: "form", v: "小吃" },
   { label: "鸡肉", kind: "ing", v: "鸡肉" },
   { label: "猪肉", kind: "ing", v: "猪肉" },
   { label: "牛肉", kind: "ing", v: "牛肉" },
@@ -62,7 +72,12 @@ const SOFT = [
   { label: "不吃猪肉", kind: "avoid", v: "猪肉" },
   { label: "不吃鸡蛋", kind: "avoid", v: "鸡蛋" },
   { label: "不吃菌菇", kind: "avoid", v: "菌菇" },
-  { label: "不吃豆制品", kind: "avoid", v: "豆制品" }
+  { label: "不吃豆制品", kind: "avoid", v: "豆制品" },
+  { label: "不吃鱼", kind: "avoid", v: "鱼" },
+  { label: "不吃牛肉", kind: "avoid", v: "牛肉" },
+  { label: "不吃羊肉", kind: "avoid", v: "羊肉" },
+  { label: "不吃面食", kind: "avoid", v: "面食" },
+  { label: "不吃米饭", kind: "avoid", v: "米饭" },
 ];
 
 const ROUTE = {
@@ -81,7 +96,12 @@ const AVOID_GROUPS = {
   "猪肉": ["猪", "五花", "排骨", "火腿", "香肠", "腊肉", "培根"],
   "鸡蛋": ["鸡蛋", "蛋清", "鸭蛋", "咸蛋", "皮蛋"],
   "菌菇": ["香菇", "平菇", "杏鲍菇", "金针菇", "蘑菇", "木耳", "银耳"],
-  "豆制品": ["豆腐", "豆干", "香干", "腐竹", "豆皮", "豆花", "烤麸", "面筋"]
+  "豆制品": ["豆腐", "豆干", "香干", "腐竹", "豆皮", "豆花", "烤麸", "面筋"],
+  "鱼": ["鱼"],
+  "牛肉": ["牛"],
+  "羊肉": ["羊"],
+  "面食": ["面", "粉", "米线", "河粉", "凉皮", "年糕", "馍", "馕", "吐司", "面包"],
+  "米饭": ["米饭", "大米"]
 };
 const FORM_WORD = { "菜": "炒菜炖菜配米饭", "汤羹": "汤和羹", "主食": "面饭饺子", "小吃": "凉菜小吃" };
 const MEAL_TITLE = { breakfast: "早饭可以吃这些", lunch: "午饭可以吃这些", dinner: "晚饭可以吃这些", night: "宵夜可以吃这些" };
@@ -232,7 +252,8 @@ function scoreOf(d, a, ctx) {
     const kind = k.slice(0, i), v = k.slice(i + 1);
     if (kind === "tag" && d.tags.includes(v)) { s += 13; softHit++; why.push(SOFT_MAP[k] || v); }
     else if (kind === "ing" && d.mainIngredients.some((x) => (FOOD_GROUPS[v] || []).includes(x))) { s += 15; softHit++; why.push("有" + v); }
-    else if (kind === "method" && d.method === v) { s += 16; softHit++; why.push(v === "凉拌" ? "凉拌爽口" : "卤得入味"); }
+    else if (kind === "method" && d.method === v) { s += 16; softHit++; why.push(v === "凉拌" ? "凉拌爽口" : "是" + v + "的"); }
+    else if (kind === "form" && d.form === v) { s += 14; softHit++; why.push(SOFT_MAP[k] || v); }
   }
 
   if (a.food && a.food.length) {
@@ -330,6 +351,8 @@ function condChips() {
   if (a.method && a.method !== "any") c.push(a.method);
   if (a.main && a.main !== "any") c.push("主料：" + a.main);
   if (a.time && a.time !== "any") c.push(a.time === "999" ? "不赶时间" : a.time + " 分钟内");
+  if (a.budget === "cheap") c.push("想省点");
+  if (a.budget === "good") c.push("吃好点");
   if (a.equip === "oven") c.push("有烤箱");
   if (a.equip === "basic") c.push("一口锅");
   for (const k of state.soft || []) c.push(SOFT_MAP[k] || k.slice(k.indexOf(":") + 1));
@@ -510,7 +533,16 @@ function pushNav() {
   state.stack = (state.stack || []).slice(-24);
   state.stack.push({ s: state.screen, cur: state.current || null, folder: state.folder || null });
 }
+function clearHash() {
+  try {
+    if (typeof history !== "undefined" && history.replaceState && window.location.hash) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  } catch (e) {}
+}
+
 function navBack() {
+  clearHash();
   const p = (state.stack || []).pop();
   if (!p) { state.screen = "home"; state.folder = null; return; }
   state.screen = p.s; state.current = p.cur; state.folder = p.folder;
@@ -649,587 +681,6 @@ const LEARN = [
 function openCollect(id) { state.sheet = { type: "collect", id }; }
 function closeSheet() { state.sheet = null; }
 
-/* ---------- 小游戏（2048 / 俄罗斯方块 / 打砖块） ---------- */
-const MINI_KEY = "mini";
-const MINI = { total: 0, best: {} };
-
-function loadMini() {
-  try {
-    const raw = localStorage.getItem(MINI_KEY);
-    if (!raw) return;
-    const o = JSON.parse(raw) || {};
-    MINI.total = o.total || o.points || 0;
-    const b = o.best || {};
-    Object.keys(b).forEach(function (k) {
-      const v = b[k];
-      const n = typeof v === "number" ? v : (v && v.score) || 0;
-      if (n > MINI.best[k]) MINI.best[k] = n;
-    });
-  } catch (e) {}
-}
-function saveMini() {
-  try { localStorage.setItem(MINI_KEY, JSON.stringify({ total: MINI.total, best: MINI.best })); } catch (e) {}
-}
-loadMini();
-
-const GAME_META = {
-  g2048: { t: "2048", ico: "🔢", d: "相同数字撞到一起会合并，想办法拼出 2048。" },
-  tetris: { t: "俄罗斯方块", ico: "🧱", d: "方块堆满一行自动消掉，每 10 行快一档。" },
-  brick: { t: "打砖块", ico: "🧨", d: "拖挡板接球，把墙上的砖全部打光。" }
-};
-const GAME_KINDS = ["g2048", "tetris", "brick"];
-
-const GAME_QUOTES = [
-  "炒任何菜之前，锅要烧到微微冒烟再下油，食材才不粘。",
-  "炖肉中途加水只能加开水，冷水会让肉收紧。",
-  "蒸鱼要等水开再上锅，计时从上汽那一刻算。",
-  "青菜下锅前要沥干，带水下锅只会煮，不会炒。",
-  "盐分两次放：下锅定底味，出锅前补足。",
-  "勾芡的淀粉水要现调，放久了会沉底。",
-  "焯水加姜片和料酒，去腥主要靠这两样。",
-  "煎鱼前把鱼身擦干，皮才不破。",
-  "切丝先片成片，叠起来再切，粗细才一致。",
-  "炒饭用隔夜米，水分少，粒粒分明。"
-];
-
-let gameState = null;
-
-function nowMs() {
-  return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-}
-
-function stopGame() {
-  const g = gameState;
-  gameState = null;
-  if (!g) return;
-  if (g.raf && typeof cancelAnimationFrame === "function") cancelAnimationFrame(g.raf);
-  if (g.bannerTimer) clearTimeout(g.bannerTimer);
-}
-
-function putText(id, val) {
-  const el = document.getElementById && document.getElementById(id);
-  if (el) el.textContent = String(val);
-}
-
-function syncHud() {
-  const g = gameState;
-  if (!g) return;
-  putText("game-score", g.score);
-  const hud = document.getElementById && document.getElementById("game-hud");
-  if (!hud) return;
-  let rows;
-  if (g.kind === "g2048") rows = [["分数", g.score], ["最高", Math.max(MINI.best.g2048 || 0, g.score)], ["最大", g.max || 2]];
-  else if (g.kind === "tetris") rows = [["分数", g.score], ["消行", g.lines], ["等级", g.level]];
-  else rows = [["分数", g.score], ["关卡", g.level], ["命", g.lives]];
-  hud.innerHTML = rows.map(function (r) { return "<span>" + r[0] + " <b>" + r[1] + "</b></span>"; }).join("");
-}
-
-function banner(text) {
-  const el = document.getElementById && document.getElementById("game-banner");
-  if (!el) return;
-  el.textContent = text;
-  el.hidden = false;
-  el.classList.add("on");
-  const g = gameState;
-  if (!g) return;
-  if (g.bannerTimer) clearTimeout(g.bannerTimer);
-  g.bannerTimer = setTimeout(function () {
-    el.classList.remove("on");
-    el.hidden = true;
-  }, 1400);
-}
-
-function finish(msg) {
-  const g = gameState;
-  if (!g || g.over) return;
-  g.over = true;
-  if (g.raf && typeof cancelAnimationFrame === "function") cancelAnimationFrame(g.raf);
-  MINI.best[g.kind] = Math.max(MINI.best[g.kind] || 0, g.score);
-  MINI.total += g.score;
-  saveMini();
-  syncHud();
-  const el = document.getElementById && document.getElementById("game-over");
-  if (!el) return;
-  let extra;
-  if (g.kind === "g2048") extra = "<span>最大 <b>" + (g.max || 2) + "</b></span>";
-  else if (g.kind === "tetris") extra = "<span>消行 <b>" + g.lines + "</b></span>";
-  else extra = "<span>关卡 <b>" + g.level + "</b></span>";
-  const q = GAME_QUOTES[Math.floor(Math.random() * GAME_QUOTES.length)];
-  el.innerHTML = "<div class='go-card'>" +
-    "<div class='go-msg'>" + msg + "</div>" +
-    "<div class='go-stats'><span>得分 <b>" + g.score + "</b></span>" + extra +
-    "<span>最高 <b>" + MINI.best[g.kind] + "</b></span></div>" +
-    "<p class='go-quote'>" + q + "</p>" +
-    "<div class='row-btns'><button class='btn' data-game-retry='" + g.kind + "'>再来一局</button>" +
-    "<button class='btn primary' data-go='back'>返回小游戏</button></div></div>";
-  el.hidden = false;
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  const rr = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + rr, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rr);
-  ctx.arcTo(x + w, y + h, x, y + h, rr);
-  ctx.arcTo(x, y + h, x, y, rr);
-  ctx.arcTo(x, y, x + w, y, rr);
-  ctx.closePath();
-}
-
-/* ---------- 2048 ---------- */
-function newBoard2048() {
-  return [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
-}
-
-function addTile2048(g) {
-  const free = [];
-  for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) if (!g.b[y][x]) free.push([x, y]);
-  if (!free.length) return false;
-  const p = free[Math.floor(Math.random() * free.length)];
-  g.b[p[1]][p[0]] = Math.random() < 0.9 ? 2 : 4;
-  return true;
-}
-
-function draw2048(g) {
-  const el = document.getElementById && document.getElementById("g2048");
-  if (!el) return;
-  let html = "";
-  for (let y = 0; y < 4; y++) {
-    for (let x = 0; x < 4; x++) {
-      const v = g.b[y][x];
-      html += "<div class='tile" + (v ? " t" + v : " empty") + "'>" + (v || "") + "</div>";
-    }
-  }
-  el.innerHTML = html;
-}
-
-function blocked2048(g) {
-  for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
-    const v = g.b[y][x];
-    if (!v) return false;
-    if (x < 3 && g.b[y][x + 1] === v) return false;
-    if (y < 3 && g.b[y + 1][x] === v) return false;
-  }
-  return true;
-}
-
-function move2048(g, dir) {
-  if (!g || g.kind !== "g2048" || g.over) return;
-  const b = g.b;
-  const before = JSON.stringify(b);
-  let gained = 0;
-  function mergeLine(line) {
-    const a = line.filter(function (v) { return v; });
-    const out = [];
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] === a[i + 1]) { out.push(a[i] * 2); gained += a[i] * 2; i++; }
-      else out.push(a[i]);
-    }
-    while (out.length < 4) out.push(0);
-    return out;
-  }
-  function read(i, j) {
-    if (dir === "left") return b[i][j];
-    if (dir === "right") return b[i][3 - j];
-    if (dir === "up") return b[j][i];
-    return b[3 - j][i];
-  }
-  function write(i, j, v) {
-    if (dir === "left") b[i][j] = v;
-    else if (dir === "right") b[i][3 - j] = v;
-    else if (dir === "up") b[j][i] = v;
-    else b[3 - j][i] = v;
-  }
-  for (let i = 0; i < 4; i++) {
-    const line = [0, 1, 2, 3].map(function (j) { return read(i, j); });
-    const out = mergeLine(line);
-    for (let j = 0; j < 4; j++) write(i, j, out[j]);
-  }
-  if (JSON.stringify(b) === before) return;
-  g.score += gained;
-  addTile2048(g);
-  let mx = 0;
-  for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) mx = Math.max(mx, g.b[y][x]);
-  g.max = mx;
-  if (!g.won && mx >= 2048) { g.won = true; banner("2048 拼出来了"); }
-  syncHud();
-  draw2048(g);
-  if (blocked2048(g)) finish("走不动了。");
-}
-
-/* ---------- 俄罗斯方块 ---------- */
-const TET_SHAPES = {
-  I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
-  O: [[1, 1], [1, 1]],
-  T: [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
-  S: [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
-  Z: [[1, 1, 0], [0, 1, 1], [0, 0, 0]],
-  J: [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
-  L: [[0, 0, 1], [1, 1, 1], [0, 0, 0]]
-};
-const TET_KEYS = ["I", "O", "T", "S", "Z", "J", "L"];
-const TET_COLORS = { I: "#67b6c9", O: "#e8c25f", T: "#b48ad6", S: "#7fbf72", Z: "#e2685a", J: "#6f8fd0", L: "#e69a52" };
-
-function tetEmpty() {
-  const rows = [];
-  for (let y = 0; y < 20; y++) rows.push([null, null, null, null, null, null, null, null, null, null]);
-  return rows;
-}
-
-function tetCollide(g, m, px, py) {
-  for (let y = 0; y < m.length; y++) {
-    for (let x = 0; x < m[y].length; x++) {
-      if (!m[y][x]) continue;
-      const bx = px + x;
-      const by = py + y;
-      if (bx < 0 || bx >= 10 || by >= 20) return true;
-      if (by >= 0 && g.grid[by][bx]) return true;
-    }
-  }
-  return false;
-}
-
-function tetSpawn(g) {
-  const k = TET_KEYS[Math.floor(Math.random() * TET_KEYS.length)];
-  const m = TET_SHAPES[k].map(function (r) { return r.slice(); });
-  const x = Math.floor((10 - m[0].length) / 2);
-  if (tetCollide(g, m, x, 0)) { g.cur = null; finish("堆到顶了。"); return; }
-  g.cur = { k: k, m: m, x: x, y: 0 };
-}
-
-function tetClear(g) {
-  let n = 0;
-  for (let y = 19; y >= 0; y--) {
-    let full = true;
-    for (let x = 0; x < 10; x++) if (!g.grid[y][x]) { full = false; break; }
-    if (!full) continue;
-    g.grid.splice(y, 1);
-    g.grid.unshift([null, null, null, null, null, null, null, null, null, null]);
-    n++;
-    y++;
-  }
-  if (!n) return;
-  g.score += [0, 100, 300, 500, 800][n] * g.level;
-  g.lines += n;
-  const lv = 1 + Math.floor(g.lines / 10);
-  if (lv > g.level) {
-    g.level = lv;
-    g.dropMs = Math.max(90, 800 - (g.level - 1) * 70);
-    banner("第 " + g.level + " 档");
-  }
-  syncHud();
-}
-
-function tetLock(g) {
-  const cur = g.cur;
-  if (!cur) return;
-  for (let y = 0; y < cur.m.length; y++) {
-    for (let x = 0; x < cur.m[y].length; x++) {
-      if (!cur.m[y][x]) continue;
-      const by = cur.y + y;
-      const bx = cur.x + x;
-      if (by >= 0 && by < 20 && bx >= 0 && bx < 10) g.grid[by][bx] = cur.k;
-    }
-  }
-  g.cur = null;
-  tetClear(g);
-  tetSpawn(g);
-}
-
-function tetStep(g) {
-  if (!g.cur) return;
-  if (!tetCollide(g, g.cur.m, g.cur.x, g.cur.y + 1)) g.cur.y += 1;
-  else tetLock(g);
-}
-
-function tetRotate(g) {
-  const cur = g.cur;
-  if (!cur || cur.k === "O") return;
-  const m = cur.m;
-  const r = m[0].map(function (_, i) { return m.map(function (row) { return row[i]; }).reverse(); });
-  const kicks = [0, -1, 1, -2, 2];
-  for (let i = 0; i < kicks.length; i++) {
-    if (!tetCollide(g, r, cur.x + kicks[i], cur.y)) {
-      cur.m = r;
-      cur.x += kicks[i];
-      return;
-    }
-  }
-}
-
-function tetInput(key) {
-  const g = gameState;
-  if (!g || g.kind !== "tetris" || g.over || !g.cur) return;
-  if (key === "left") { if (!tetCollide(g, g.cur.m, g.cur.x - 1, g.cur.y)) g.cur.x -= 1; }
-  else if (key === "right") { if (!tetCollide(g, g.cur.m, g.cur.x + 1, g.cur.y)) g.cur.x += 1; }
-  else if (key === "down") { tetStep(g); g.acc = 0; }
-  else if (key === "rot") tetRotate(g);
-  else if (key === "drop") {
-    let guard = 0;
-    while (g.cur && !tetCollide(g, g.cur.m, g.cur.x, g.cur.y + 1) && guard++ < 25) g.cur.y += 1;
-    tetLock(g);
-    g.acc = 0;
-  }
-  drawTetris(g);
-}
-
-function drawTetris(g) {
-  const ctx = g.ctx;
-  const c = g.cell;
-  const W = g.cv.width;
-  const H = g.cv.height;
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = "#221b17";
-  ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = "rgba(255,255,255,.05)";
-  ctx.lineWidth = 1;
-  for (let x = 1; x < 10; x++) { ctx.beginPath(); ctx.moveTo(x * c, 0); ctx.lineTo(x * c, H); ctx.stroke(); }
-  for (let y = 1; y < 20; y++) { ctx.beginPath(); ctx.moveTo(0, y * c); ctx.lineTo(W, y * c); ctx.stroke(); }
-  for (let y = 0; y < 20; y++) {
-    for (let x = 0; x < 10; x++) {
-      const k = g.grid[y][x];
-      if (!k) continue;
-      ctx.fillStyle = TET_COLORS[k] || "#9c8a7a";
-      roundRect(ctx, x * c + 1, y * c + 1, c - 2, c - 2, 3 * g.dpr);
-      ctx.fill();
-    }
-  }
-  const cur = g.cur;
-  if (!cur) return;
-  ctx.fillStyle = TET_COLORS[cur.k] || "#9c8a7a";
-  for (let y = 0; y < cur.m.length; y++) {
-    for (let x = 0; x < cur.m[y].length; x++) {
-      if (!cur.m[y][x]) continue;
-      const by = cur.y + y;
-      if (by < 0) continue;
-      roundRect(ctx, (cur.x + x) * c + 1, by * c + 1, c - 2, c - 2, 3 * g.dpr);
-      ctx.fill();
-    }
-  }
-}
-
-/* ---------- 打砖块 ---------- */
-function brickSetup(g) {
-  g.W = g.cv.width;
-  g.H = g.cv.height;
-  const dpr = g.dpr;
-  g.bricks = [];
-  const cols = 7;
-  const rows = 4 + Math.min(3, g.level);
-  const gap = 2 * dpr;
-  const top = 26 * dpr;
-  const bw = (g.W - gap * (cols + 1)) / cols;
-  const bh = 13 * dpr;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      g.bricks.push({ x: gap + c * (bw + gap), y: top + r * (bh + gap), w: bw, h: bh, row: r, hp: 1 });
-    }
-  }
-  if (!g.pad) g.pad = { w: 66 * dpr, h: 10 * dpr, x: g.W / 2 - 33 * dpr };
-  if (g.lives === undefined) g.lives = 3;
-  g.ball = { x: g.W / 2, y: g.H - 78 * dpr, r: 5 * dpr, live: false, speed: (3.1 + (g.level - 1) * 0.3) * dpr, vx: 0, vy: 0 };
-}
-
-function brickLose(g) {
-  g.lives -= 1;
-  syncHud();
-  if (g.lives <= 0) { finish("球掉光了。"); return; }
-  banner("还剩 " + g.lives + " 条命");
-  g.ball.live = false;
-  g.ball.vx = 0;
-  g.ball.vy = 0;
-  g.ball.x = g.W / 2;
-  g.ball.y = g.H - 78 * g.dpr;
-}
-
-function brickLaunch(g) {
-  const b = g.ball;
-  if (!b || b.live) return;
-  b.live = true;
-  b.vx = b.speed * 0.42;
-  b.vy = -Math.abs(b.speed * 0.9);
-}
-
-function brickUpdate(g, f) {
-  const b = g.ball;
-  if (!b || !b.live || g.over) return;
-  const pad = g.pad;
-  const steps = Math.min(8, Math.max(1, Math.ceil(Math.max(Math.abs(b.vx), Math.abs(b.vy)) * f / (b.r * 0.9))));
-  for (let s = 0; s < steps; s++) {
-    b.x += (b.vx * f) / steps;
-    b.y += (b.vy * f) / steps;
-    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx); }
-    if (b.x + b.r > g.W) { b.x = g.W - b.r; b.vx = -Math.abs(b.vx); }
-    if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy); }
-    const padTop = g.H - pad.h - 6 * g.dpr;
-    if (b.vy > 0 && b.y + b.r >= padTop && b.y - b.r <= padTop + pad.h && b.x >= pad.x - b.r && b.x <= pad.x + pad.w + b.r) {
-      b.y = padTop - b.r;
-      const off = Math.max(-1, Math.min(1, (b.x - (pad.x + pad.w / 2)) / (pad.w / 2)));
-      const sp = Math.max(3.1 * g.dpr, Math.hypot(b.vx, b.vy));
-      const ang = off * 1.0;
-      b.vx = Math.sin(ang) * sp;
-      b.vy = -Math.abs(Math.cos(ang) * sp);
-    }
-    for (let i = 0; i < g.bricks.length; i++) {
-      const br = g.bricks[i];
-      if (br.hp <= 0) continue;
-      if (b.x + b.r > br.x && b.x - b.r < br.x + br.w && b.y + b.r > br.y && b.y - b.r < br.y + br.h) {
-        br.hp = 0;
-        g.score += 10;
-        const ox = Math.min(b.x + b.r - br.x, br.x + br.w - (b.x - b.r));
-        const oy = Math.min(b.y + b.r - br.y, br.y + br.h - (b.y - b.r));
-        if (ox < oy) b.vx = -b.vx;
-        else b.vy = -b.vy;
-        syncHud();
-        break;
-      }
-    }
-    if (b.y - b.r > g.H) { brickLose(g); return; }
-  }
-  let left = 0;
-  for (let i = 0; i < g.bricks.length; i++) if (g.bricks[i].hp > 0) left++;
-  if (!left) {
-    g.level += 1;
-    banner("第 " + g.level + " 关");
-    brickSetup(g);
-    syncHud();
-  }
-}
-
-function drawBrick(g) {
-  const ctx = g.ctx;
-  ctx.clearRect(0, 0, g.W, g.H);
-  ctx.fillStyle = "#221b17";
-  ctx.fillRect(0, 0, g.W, g.H);
-  const cols = ["#e2685a", "#e69a52", "#e8c25f", "#7fbf72", "#67b6c9", "#b48ad6"];
-  for (let i = 0; i < g.bricks.length; i++) {
-    const br = g.bricks[i];
-    if (br.hp <= 0) continue;
-    ctx.fillStyle = cols[br.row % cols.length];
-    roundRect(ctx, br.x, br.y, br.w, br.h, 3 * g.dpr);
-    ctx.fill();
-  }
-  const pad = g.pad;
-  ctx.fillStyle = "#f6e7cf";
-  roundRect(ctx, pad.x, g.H - pad.h - 6 * g.dpr, pad.w, pad.h, pad.h / 2);
-  ctx.fill();
-  if (g.ball) {
-    ctx.beginPath();
-    ctx.arc(g.ball.x, g.ball.y, g.ball.r, 0, Math.PI * 2);
-    ctx.fillStyle = "#fffdf7";
-    ctx.fill();
-  }
-  if (g.ball && !g.ball.live) {
-    ctx.fillStyle = "rgba(255,253,247,.72)";
-    ctx.font = Math.round(13 * g.dpr) + "px system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("拖动挡板发球", g.W / 2, g.H * 0.55);
-  }
-}
-
-/* ---------- 总入口 ---------- */
-function gameInput(key) {
-  const g = gameState;
-  if (!g || g.over) return;
-  if (g.kind === "g2048") {
-    if (key === "left" || key === "right" || key === "up" || key === "down") move2048(g, key);
-    return;
-  }
-  if (g.kind === "tetris") { tetInput(key); return; }
-  if (g.kind === "brick") {
-    if (key === "left") g.pad.x = Math.max(0, g.pad.x - 26 * g.dpr);
-    else if (key === "right") g.pad.x = Math.min(g.W - g.pad.w, g.pad.x + 26 * g.dpr);
-    else brickLaunch(g);
-    drawBrick(g);
-  }
-}
-
-function bindTouch() {
-  const cv = document.getElementById && document.getElementById("game-canvas");
-  if (!cv || !cv.addEventListener) return;
-  function place(e) {
-    const g = gameState;
-    if (!g || g.kind !== "brick") return;
-    const r = cv.getBoundingClientRect ? cv.getBoundingClientRect() : null;
-    if (!r || !r.width) return;
-    const x = (e.clientX - r.left) * (cv.width / r.width);
-    g.pad.x = Math.max(0, Math.min(g.W - g.pad.w, x - g.pad.w / 2));
-    if (!g.ball.live) brickLaunch(g);
-  }
-  cv.addEventListener("pointermove", place);
-  cv.addEventListener("pointerdown", place);
-}
-
-function mountGame(kind) {
-  stopGame();
-  if (!kind || !GAME_META[kind]) kind = "g2048";
-  if (typeof document === "undefined" || typeof document.getElementById !== "function") { gameState = null; return; }
-  const dpr = Math.min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1);
-  const g = { kind: kind, score: 0, level: 1, lines: 0, lives: 3, max: 2, won: false, over: false, dpr: dpr, acc: 0 };
-  gameState = g;
-  const ov = document.getElementById("game-over");
-  if (ov) { ov.hidden = true; ov.innerHTML = ""; }
-  const bn = document.getElementById("game-banner");
-  if (bn) { bn.hidden = true; bn.classList.remove("on"); }
-  if (kind === "g2048") {
-    g.b = newBoard2048();
-    addTile2048(g);
-    addTile2048(g);
-    syncHud();
-    draw2048(g);
-    return;
-  }
-  const cv = document.getElementById("game-canvas");
-  if (!cv || typeof cv.getContext !== "function") { syncHud(); return; }
-  const ctx = cv.getContext("2d");
-  if (!ctx || !ctx.fillRect) { syncHud(); return; }
-  g.cv = cv;
-  g.ctx = ctx;
-  if (kind === "tetris") {
-    g.cell = 20 * dpr;
-    cv.width = 10 * g.cell;
-    cv.height = 20 * g.cell;
-    g.grid = tetEmpty();
-    g.dropMs = 800;
-    tetSpawn(g);
-  } else {
-    cv.width = 300 * dpr;
-    cv.height = 400 * dpr;
-    brickSetup(g);
-    bindTouch();
-  }
-  syncHud();
-  g.last = nowMs();
-  drawGame(g);
-  g.raf = requestAnimationFrame(function (t) { gameTick(t); });
-}
-
-function drawGame(g) {
-  if (g.kind === "tetris") drawTetris(g);
-  else if (g.kind === "brick") drawBrick(g);
-}
-
-function gameTick(ts) {
-  const g = gameState;
-  if (!g || g.over) return;
-  const dt = Math.min(60, ts - g.last);
-  g.last = ts;
-  if (g.kind === "tetris") {
-    g.acc += dt;
-    while (g.acc >= g.dropMs) {
-      g.acc -= g.dropMs;
-      tetStep(g);
-      if (g.over) return;
-    }
-    drawTetris(g);
-  } else if (g.kind === "brick") {
-    brickUpdate(g, dt / 16.67);
-    drawBrick(g);
-  }
-  if (!g.over && gameState === g) g.raf = requestAnimationFrame(function (t) { gameTick(t); });
-}
-
-
 /* ---------- 底部弹层 ---------- */
 function sheetHtml() {
   const sh = state.sheet;
@@ -1283,10 +734,7 @@ function sheetHtml() {
 }
 
 function render() {
-  if (state.screen !== "game") stopGame();
   const v = $("#app");
-
-  if (state.screen !== "game") stopGame();
 
   if (state.screen === "home") {
     v.innerHTML = "<div class='screen'>" +
@@ -1298,7 +746,6 @@ function render() {
       bigBtn("c", "🔥", "今日推荐", "两组各 4 道，挑一组就走", "daily") +
       bigBtn("d", "📚", "学习指南", "从初级到大师，跟着视频练", "learn") +
       bigBtn("e", "🎯", "直接来一批", "不问条件，随便抽几道", "spin") +
-      bigBtn("f", "🎮", "小游戏", "2048、俄罗斯方块、打砖块", "games") +
       recentStrip() +
       "<button class='home-link' data-go='saved'>★ 我的收藏<span>" + state.saved.size + " 道</span>›</button>" +
       installTip() +
@@ -1331,7 +778,7 @@ function render() {
 
   if (state.screen === "soft") {
     const groups = [
-      ["今天就想吃", SOFT.filter((o) => o.kind === "tag" || o.kind === "method")],
+      ["今天就想吃", SOFT.filter((o) => o.kind === "tag" || o.kind === "method" || o.kind === "form")],
       ["想吃到的主料", SOFT.filter((o) => o.kind === "ing")],
       ["这些别放", SOFT.filter((o) => o.kind === "avoid")]
     ];
@@ -1339,7 +786,7 @@ function render() {
     v.innerHTML = "<div class='screen'>" +
       "<div class='topbar'><button class='back' data-go='quiz' aria-label='返回'>‹</button>" +
       "<h2 style='flex:1;font-size:19px'>还有什么讲究？</h2><span class='pill' id='softcount'>已选 " + picked + "</span></div>" +
-      "<p class='sub' style='margin:-10px 0 18px'>可以多选，也可以一个都不选。这些只影响排序，不会把菜筛没。</p>" +
+      "<p class='sub' style='margin:-10px 0 18px'>可以多选，也可以一个都不选。「这些别放」会真的把带它的菜去掉，其余只影响排序。</p>" +
       "<div class='groups'>" + groups.map(([title, items]) =>
         "<div><div class='group-title'>" + title + "<span class='n'>" + items.length + "</span></div>" +
         "<div class='chips'>" + items.map((o) => {
@@ -1478,64 +925,6 @@ function render() {
       "</div>";
   }
 
-  if (state.screen === "games") {
-    const cards = GAME_KINDS.map(function (k) {
-      const m = GAME_META[k];
-      const best = MINI.best[k] ? "最高 " + MINI.best[k] + " 分" : "还没玩过";
-      return "<button class='game-card' data-game='" + k + "'>" +
-        "<span class='gc-ico'>" + m.ico + "</span>" +
-        "<span class='gc-body'><span class='gc-t'>" + m.t + "</span>" +
-        "<span class='gc-d'>" + m.d + "</span>" +
-        "<span class='gc-best'>" + best + "</span></span>" +
-        "<span class='arrow'>›</span></button>";
-    }).join("");
-    v.innerHTML = "<div class='screen'>" +
-      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
-      "<h2 style='flex:1;font-size:19px'>小游戏</h2></div>" +
-      "<div class='hub-pts'><span>累计得分</span><b>" + MINI.total + "</b></div>" +
-      "<div class='game-list'>" + cards + "</div>" +
-      "<p class='foot-note'>分数只留在这台设备上。</p>" +
-      "</div>";
-  }
-
-  if (state.screen === "game") {
-    const kind = (state.game && state.game.kind) || "g2048";
-    const meta = GAME_META[kind] || GAME_META.g2048;
-    const dirPad = "<div class='dpad'>" +
-      "<button class='dbtn up' data-game-key='up' aria-label='上'>▲</button>" +
-      "<button class='dbtn left' data-game-key='left' aria-label='左'>◀</button>" +
-      "<button class='dbtn down' data-game-key='down' aria-label='下'>▼</button>" +
-      "<button class='dbtn right' data-game-key='right' aria-label='右'>▶</button></div>";
-    const tetPad = "<div class='tpad'>" +
-      "<button class='tbtn' data-tet='left' aria-label='左移'>◀</button>" +
-      "<button class='tbtn' data-tet='rot' aria-label='旋转'>↻</button>" +
-      "<button class='tbtn' data-tet='right' aria-label='右移'>▶</button>" +
-      "<button class='tbtn wide' data-tet='down'>▼ 下落</button>" +
-      "<button class='tbtn wide' data-tet='drop'>⤓ 到底</button></div>";
-    const bPad = "<div class='dpad two'>" +
-      "<button class='dbtn' data-game-key='left' aria-label='左'>◀</button>" +
-      "<button class='dbtn' data-game-key='right' aria-label='右'>▶</button></div>";
-    let body;
-    let tip;
-    if (kind === "g2048") {
-      body = "<div class='g2048' id='g2048'></div>" + dirPad;
-      tip = "方向键、按钮或滑动屏幕都能合。";
-    } else {
-      body = "<div class='game-wrap'><canvas id='game-canvas'></canvas></div>" + (kind === "tetris" ? tetPad : bPad);
-      tip = kind === "tetris" ? "◀ ▶ 移动，↻ 旋转，⤓ 直接落到底。" : "拖动挡板接球，球掉到底就少一条命。";
-    }
-    v.innerHTML = "<div class='screen game-screen gk-" + kind + "'>" +
-      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
-      "<h2 style='flex:1;font-size:19px'>" + meta.t + "</h2>" +
-      "<span class='pill'><b id='game-score'>0</b> 分</span></div>" +
-      "<div class='game-hud' id='game-hud'></div>" +
-      body +
-      "<div class='game-banner' id='game-banner' hidden></div>" +
-      "<div class='game-over' id='game-over' hidden></div>" +
-      "<p class='game-tip'>" + tip + "</p>" +
-      "</div>";
-    mountGame(kind);
-  }
 
   if (state.screen === "detail") {
     const d = DISHES.find((x) => x.id === state.current);
@@ -1781,7 +1170,7 @@ document.addEventListener("click", (e) => {
     else openPhoto(lbState.id, lbState.i + 1);
     return;
   }
-  const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft],[data-save],[data-star],[data-eat],[data-copy],[data-photo],[data-folder],[data-rename],[data-drop],[data-newfolder],[data-folder-save],[data-folder-remove],[data-drop-confirm],[data-lvl],[data-daily],[data-game],[data-game-key],[data-game-retry],[data-tet]");
+  const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft],[data-save],[data-star],[data-eat],[data-copy],[data-photo],[data-folder],[data-rename],[data-drop],[data-newfolder],[data-folder-save],[data-folder-remove],[data-drop-confirm],[data-lvl],[data-daily]");
   if (!t) return;
   if (t.dataset.photo) {
     const id = t.dataset.photo;
@@ -1900,15 +1289,6 @@ document.addEventListener("click", (e) => {
   if (t.dataset.folderRemove) return askDropFolder(t.dataset.folderRemove);
   if (t.dataset.lvl) { state.learnLevel = t.dataset.lvl; return render(); }
   if (t.dataset.daily) { state.dailyGroup = t.dataset.daily; return render(); }
-  if (t.dataset.tet) { tetInput(t.dataset.tet); return; }
-  if (t.dataset.game) {
-    pushNav();
-    state.game = { kind: t.dataset.game };
-    state.screen = "game";
-    return render();
-  }
-  if (t.dataset.gameRetry) { mountGame(t.dataset.gameRetry); return; }
-  if (t.dataset.gameKey) { gameDir(t.dataset.gameKey); return; }
   const go = t.dataset.go;
   if (!go) return;
   if (go === "back") { navBack(); return render(); }
@@ -1952,17 +1332,6 @@ document.addEventListener("keydown", (e) => {
   if (wb && wb.classList.contains("on")) { closeWheel(); return; }
   closePhoto();
 });
-document.addEventListener("keydown", (e) => {
-  if (!gameState || state.screen !== "game" || gameState.over) return;
-  const arrow = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" }[e.key];
-  if (gameState.kind === "tetris") {
-    if (e.key === " ") { tetInput("drop"); e.preventDefault(); return; }
-    if (e.key === "ArrowUp") { tetInput("rot"); e.preventDefault(); return; }
-    if (arrow) { tetInput(arrow); e.preventDefault(); }
-    return;
-  }
-  if (arrow) { gameInput(arrow); e.preventDefault(); }
-});
 
 (async () => {
   try {
@@ -1990,6 +1359,19 @@ document.addEventListener("keydown", (e) => {
   if (deep && DISHES.some((d) => d.id === deep)) { state.current = deep; state.screen = "detail"; }
   render();
 })();
+
+// 分享/浏览器里直接改 hash 时也能进详情，不用整页重载
+if (typeof window !== "undefined" && window.addEventListener) {
+  window.addEventListener("hashchange", () => {
+    const id = (window.location.hash || "").replace("#", "").trim();
+    if (!id || !DISHES.some((d) => d.id === id)) return;
+    if (state.screen === "detail" && state.current === id) return;
+    pushNav();
+    state.current = id;
+    state.screen = "detail";
+    render();
+  });
+}
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

@@ -156,30 +156,9 @@ click({ go: "home" });
 click({ go: "saved" });
 ok("收藏页统计到 1 道", html().includes("1 道"));
 
-// ----- 小游戏 -----
+// ----- 小游戏已移除 -----
 click({ go: "home" });
-ok("首页有独立的小游戏入口", html().includes("data-go='games'") && html().includes("小游戏"));
-click({ go: "learn" });
-ok("学习指南不再挂小游戏", !html().includes("data-go='games'"));
-click({ go: "home" });
-click({ go: "games" });
-ok("游戏列表有三款", (html().match(/data-game=/g) || []).length === 3);
-ok("游戏列表有累计得分与最高分", html().includes("累计得分") && html().includes("class='gc-best'"));
-ok("列表是 2048 / 俄罗斯方块 / 打砖块", html().includes("2048") && html().includes("俄罗斯方块") && html().includes("打砖块"));
-click({ game: "g2048" });
-ok("进入 2048", mod.state.screen === "game" && html().includes("id='g2048'") && html().includes("id='game-hud'"));
-ok("2048 有方向按钮", (html().match(/data-game-key=/g) || []).length === 4);
-click({ go: "back" });
-ok("从 2048 返回列表", mod.state.screen === "games");
-click({ game: "tetris" });
-ok("进入俄罗斯方块", html().includes("id='game-canvas'") && (html().match(/data-tet=/g) || []).length === 5);
-click({ go: "back" });
-click({ game: "brick" });
-ok("进入打砖块", html().includes("id='game-canvas'") && html().includes("拖动挡板"));
-click({ go: "back" });
-ok("再返回回到列表", mod.state.screen === "games");
-click({ go: "back" });
-ok("再返回回到首页", mod.state.screen === "home");
+ok("首页不再有小游戏入口", !html().includes("data-go='games'"));
 
 // ----- 删除分类需要确认 -----
 click({ go: "home" });
