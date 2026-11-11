@@ -516,3 +516,36 @@ input[type=text]:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 4px
 .dbtn.left{grid-column:1;grid-row:2}
 .dbtn.down{grid-column:2;grid-row:2}
 .dbtn.right{grid-column:3;grid-row:2}
+
+/* ---------- 小游戏 v344：2048 / 俄罗斯方块 / 打砖块 ---------- */
+.game-screen{padding-bottom:26px}
+.g2048{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:8px;margin:2px 0 14px;
+  background:#efe2d1;border-radius:18px;box-shadow:var(--sh-2)}
+.tile{min-width:0;aspect-ratio:1;border-radius:12px;display:grid;place-items:center;background:#f7ecdd;
+  font-size:clamp(18px,6.4vw,27px);font-weight:800;color:#6b5546;letter-spacing:-.01em;user-select:none}
+.tile.empty{background:#f3e6d4}
+.tile.t2{background:#f7ecdd}
+.tile.t4{background:#f2e2c7}
+.tile.t8{background:#f7cfa1;color:#4a3325}
+.tile.t16{background:#f4b479;color:#412c20}
+.tile.t32{background:#ef9a5f;color:#fff}
+.tile.t64{background:#e97a45;color:#fff}
+.tile.t128{background:#e35f3d;color:#fff}
+.tile.t256{background:#d94a30;color:#fff}
+.tile.t512{background:#cb3a24;color:#fff}
+.tile.t1024{background:#bb2f1c;color:#fff;font-size:clamp(15px,5vw,21px)}
+.tile.t2048{background:#a9261b;color:#fff;font-size:clamp(15px,5vw,21px);box-shadow:0 0 0 2px #f0c9a8 inset}
+
+.dpad.two{grid-template-columns:repeat(2,88px);grid-template-rows:56px;gap:12px}
+.dpad.two .dbtn{grid-column:auto;grid-row:1}
+
+.tpad{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:0 0 10px}
+.tbtn{grid-column:span 2;height:52px;border:1px solid var(--line);background:var(--card);border-radius:14px;
+  color:var(--ink);font-size:15px;font-weight:600;line-height:1;box-shadow:var(--sh-1);cursor:pointer;
+  font-family:inherit;touch-action:manipulation}
+.tbtn:active{transform:scale(.96);background:#fdf1e7}
+.tbtn.wide{grid-column:span 3;font-size:13.5px}
+
+.gk-tetris .game-wrap{display:flex;justify-content:center;margin:0 0 12px}
+.gk-tetris .game-wrap canvas{width:auto;height:min(54vh,440px);max-width:100%}
+.gk-brick .game-wrap canvas{width:100%;height:auto}

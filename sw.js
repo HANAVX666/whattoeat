@@ -1,4 +1,4 @@
-const VERSION = "v343-games";
+const VERSION = "v345-games";
 const CACHE = "eat-" + VERSION;
 const IMG_CACHE = "eat-img-v1";
 const SHELL = [
