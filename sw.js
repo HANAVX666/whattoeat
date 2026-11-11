@@ -1,4 +1,4 @@
-const VERSION = "v341-fix";
+const VERSION = "v342-feat";
 const CACHE = "eat-" + VERSION;
 const IMG_CACHE = "eat-img-v1";
 const SHELL = [

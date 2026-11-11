@@ -88,18 +88,28 @@ ok("随机抽也有卡片", (html().match(/class='dish'/g) || []).length > 0);
 // ----- 今日推荐 -----
 click({ go: "home" });
 click({ go: "daily" });
-ok("今日推荐有 8 道", (html().match(/class='dish'/g) || []).length === 8 && html().includes("今日推荐"));
-ok("今日推荐有推荐理由", html().includes("水煮") || html().includes("起锅") || html().includes("class='why'"));
+ok("今日推荐先给两个入口", (html().match(/data-daily=/g) || []).length === 2 && (html().match(/class='dish'/g) || []).length === 0);
 ok("今日推荐没有刷新按钮", !html().includes("刷新换一批"));
+ok("今日推荐不再有说明长句", !html().includes("不刷新。都是好上手"));
+click({ daily: "hot" });
+ok("选组后出 4 道", (html().match(/class='dish'/g) || []).length === 4);
+ok("今日推荐有推荐理由", html().includes("class='why'"));
+click({ daily: "light" });
+ok("切到清爽养胃也 4 道", (html().match(/class='dish'/g) || []).length === 4 && html().includes("清爽养胃"));
+ok("旧的养身体的文案已删", !html().includes("养身体的"));
 
 // ----- 学习指南 -----
 click({ go: "back" });
 ok("从今日推荐能返回首页", html().includes("不知道吃什么"));
 click({ go: "learn" });
 ok("学习指南有四个难度", (html().match(/data-lvl=/g) || []).length === 4);
-ok("学习指南有外链条目", (html().match(/class='learn-item'/g) || []).length === 4);
+ok("学习指南有外链条目", (html().match(/class='learn-item'/g) || []).length === 9);
+ok("学习指南有主题和小游戏入口", html().includes("class='learn-topic'") && html().includes("data-go='games'"));
+ok("学习指南有练手菜", (html().match(/class='chipbtn'/g) || []).length > 0);
+const learnHref = (html().match(/href='https:\/\/search\.bilibili\.com[^']*'/) || [])[0] || "";
+ok("外链指向 B 站搜索", learnHref.length > 20);
 click({ lvl: "师" });
-ok("切到大师级内容变了", html().includes("吊高汤"));
+ok("切到大师级内容变了", html().includes("扫汤") && html().includes("刀工进阶"));
 
 // ----- 收藏分类 -----
 click({ go: "home" });
@@ -145,6 +155,29 @@ ok("关闭弹层", !html().includes("复制这段"));
 click({ go: "home" });
 click({ go: "saved" });
 ok("收藏页统计到 1 道", html().includes("1 道"));
+
+// ----- 小游戏 -----
+click({ go: "home" });
+click({ go: "learn" });
+click({ go: "games" });
+ok("游戏列表有两款", (html().match(/data-game=/g) || []).length === 2);
+click({ game: "snake" });
+ok("进入贪吃蛇", mod.state.screen === "game" && html().includes("id='game-canvas'"));
+click({ go: "back" });
+ok("从游戏返回列表", mod.state.screen === "games");
+click({ go: "back" });
+ok("再返回回到学习指南", mod.state.screen === "learn");
+
+// ----- 删除分类需要确认 -----
+click({ go: "home" });
+click({ go: "saved" });
+click({ drop: "want" });
+ok("删非空分类先弹确认", html().includes("删除分类") && html().includes("会一起删掉"));
+click({ sheetClose: "" });
+ok("取消后分类还在", html().includes("data-folder='want'"));
+click({ drop: "want" });
+click({ dropConfirm: "want" });
+ok("确认后分类消失", !html().includes("data-folder='want'"));
 
 const bad = checks.filter((c) => !c[1]);
 console.log(bad.length ? "FAIL " + bad.length + " / " + checks.length : "OK 全部通过（" + checks.length + " 项）");
