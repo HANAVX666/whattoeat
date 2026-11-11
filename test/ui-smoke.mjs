@@ -8,8 +8,9 @@ const src = readFileSync(join(ROOT, "app.js"), "utf8");
 
 const appEl = { innerHTML: "", querySelector: () => null };
 const inputEl = { value: "" };
+const foldInput = { value: "" };
 const document = {
-  querySelector: (s) => (s === "#app" ? appEl : s === "#pantry" ? inputEl : null),
+  querySelector: (s) => (s === "#app" ? appEl : s === "#pantry" ? inputEl : s === "#foldname" ? foldInput : null),
   querySelectorAll: () => [],
   addEventListener: (type, fn) => { handlers[type] = fn; },
 };
@@ -83,6 +84,67 @@ ok("食材刷新仍正常", (html().match(/class='dish'/g) || []).length > 0);
 click({ go: "home" });
 click({ go: "spin" });
 ok("随机抽也有卡片", (html().match(/class='dish'/g) || []).length > 0);
+
+// ----- 今日推荐 -----
+click({ go: "home" });
+click({ go: "daily" });
+ok("今日推荐有 8 道", (html().match(/class='dish'/g) || []).length === 8 && html().includes("今日推荐"));
+ok("今日推荐有推荐理由", html().includes("水煮") || html().includes("起锅") || html().includes("class='why'"));
+ok("今日推荐没有刷新按钮", !html().includes("刷新换一批"));
+
+// ----- 学习指南 -----
+click({ go: "back" });
+ok("从今日推荐能返回首页", html().includes("不知道吃什么"));
+click({ go: "learn" });
+ok("学习指南有四个难度", (html().match(/data-lvl=/g) || []).length === 4);
+ok("学习指南有外链条目", (html().match(/class='learn-item'/g) || []).length === 4);
+click({ lvl: "师" });
+ok("切到大师级内容变了", html().includes("吊高汤"));
+
+// ----- 收藏分类 -----
+click({ go: "home" });
+click({ go: "saved" });
+ok("收藏页有默认分类", html().includes("我想吃") && html().includes("想试试") && html().includes("考虑考虑"));
+click({ newfolder: "" });
+ok("弹出新建分类", html().includes("新建分类"));
+foldInput.value = "周末做";
+click({ folderSave: "new" });
+ok("新建分类成功", html().includes("周末做"));
+click({ folder: "want" });
+ok("能打开分类", html().includes("这个分类还是空的"));
+
+// ----- 详情页收藏 / 吃过了 / 复制 / 返回 -----
+click({ go: "home" });
+click({ go: "spin" });
+const sId = (html().match(/data-id='([^']+)'/g) || [])[0].match(/'([^']+)'/)[1];
+click({ id: sId });
+ok("详情页有收藏按钮", html().includes("☆ 收藏"));
+click({ save: sId });
+ok("点收藏弹出分类", html().includes("收藏到"));
+click({ collect: "want" });
+ok("收藏后按钮变已收藏", html().includes("★ 已收藏"));
+const nId = (html().match(/data-id='([^']+)'/g) || []).map((x) => x.match(/'([^']+)'/)[1]).find((x) => x !== sId);
+click({ id: nId });
+click({ go: "back" });
+ok("从推荐菜返回上一道菜", mod.state.current === sId && mod.state.screen === "detail");
+click({ go: "back" });
+ok("再返回回到结果页", mod.state.screen === "result");
+
+click({ id: sId });
+click({ eat: sId });
+ok("吃过了状态写进 state", (mod.state.eaten || []).some((x) => x.id === sId));
+click({ eat: sId });
+ok("再点一次能取消吃过了", !(mod.state.eaten || []).some((x) => x.id === sId));
+
+click({ copy: sId });
+ok("复制失败时给出可复制的文字", html().includes("复制这段") && html().includes("做法"));
+click({ sheetClose: "" });
+ok("关闭弹层", !html().includes("复制这段"));
+
+// ----- 收藏落库 -----
+click({ go: "home" });
+click({ go: "saved" });
+ok("收藏页统计到 1 道", html().includes("1 道"));
 
 const bad = checks.filter((c) => !c[1]);
 console.log(bad.length ? "FAIL " + bad.length + " / " + checks.length : "OK 全部通过（" + checks.length + " 项）");

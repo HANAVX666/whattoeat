@@ -10,7 +10,7 @@ let PHOTOS = {};
 let photosReady = false;
 let photosLoading = null;
 let THUMBS = new Set();
-const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), saved: new Set(), eaten: [], batch: [], reasons: new Map(), refresh: 0, pantryText: "" };
+const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), saved: new Set(), eaten: [], batch: [], reasons: new Map(), refresh: 0, pantryText: "", collections: [], stack: [], folder: null, sheet: null, learnLevel: "初", current: null };
 
 const QUESTIONS = [
   { id: "src", q: "今天自己做，还是点外卖？", opts: [["自己动手做", "cook"], ["点外卖 / 出去吃", "out"], ["都行", "any"]] },
@@ -392,6 +392,11 @@ function markEaten(id) {
   localStorage.setItem("eaten", JSON.stringify(state.eaten));
 }
 
+function unmarkEaten(id) {
+  state.eaten = (state.eaten || []).filter((x) => x.id !== id);
+  try { localStorage.setItem("eaten", JSON.stringify(state.eaten)); } catch (e) {}
+}
+
 function recentStrip() {
   const items = (state.eaten || []).slice(0, 8).map((e) => DISHES.find((d) => d.id === e.id)).filter(Boolean);
   if (!items.length) return "";
@@ -418,13 +423,13 @@ function nearHtml(d) {
     near.map((x) => "<button class='chipbtn' data-id='" + x.id + "'>" + x.name + "</button>").join("") + "</div>";
 }
 
-function card(d, i) {
+function card(d, i, note) {
   const rs = (state.reasons && state.reasons.get(d.id)) || [];
   const pick = rs.filter((r) => !r.startsWith("正好是")).slice(0, 2);
-  const why = (pick.length ? pick : rs.slice(0, 1)).join(" · ");
+  const why = note || (pick.length ? pick : rs.slice(0, 1)).join(" · ");
   const on = state.saved.has(d.id);
   return "<div class='dish' data-id='" + d.id + "' style='--i:" + (i || 0) + "'>" +
-    "<button class='star" + (on ? " on" : "") + "' data-save='" + d.id + "' aria-label='收藏'>" + (on ? "★" : "☆") + "</button>" +
+    "<button class='star" + (on ? " on" : "") + "' data-star='" + d.id + "' aria-label='收藏'>" + (on ? "★" : "☆") + "</button>" +
     thumb(d) +
     "<div class='dish-body'><div class='dish-name'>" + d.name + "</div>" +
     "<div class='meta'><span class='chip'>" + d.timeMin + " 分钟</span><span class='chip'>" + spicyWord[d.spicy] + "</span></div>" +
@@ -438,6 +443,203 @@ function bigBtn(tone, ico, title, desc, go) {
     "<span class='arrow'>›</span></button>";
 }
 
+/* ---------- 收藏分类 ---------- */
+const SEED_FOLDERS = [
+  { id: "want", name: "我想吃" },
+  { id: "try", name: "想试试" },
+  { id: "think", name: "考虑考虑" }
+];
+const uid = () => "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+
+function saveCollections() {
+  try { localStorage.setItem("collections", JSON.stringify(state.collections)); } catch (e) {}
+}
+function rebuildSaved() {
+  const s = new Set();
+  (state.collections || []).forEach((c) => (c.dishes || []).forEach((id) => s.add(id)));
+  state.saved = s;
+}
+function addToFolder(fid, id) {
+  const c = (state.collections || []).find((x) => x.id === fid);
+  if (!c || c.dishes.includes(id)) return;
+  c.dishes.unshift(id);
+  saveCollections(); rebuildSaved();
+}
+function removeFromFolder(fid, id) {
+  const c = (state.collections || []).find((x) => x.id === fid);
+  if (!c) return;
+  c.dishes = c.dishes.filter((x) => x !== id);
+  saveCollections(); rebuildSaved();
+}
+function removeEverywhere(id) {
+  (state.collections || []).forEach((c) => { c.dishes = c.dishes.filter((x) => x !== id); });
+  saveCollections(); rebuildSaved();
+}
+function createFolder(name) {
+  const c = { id: uid(), name: (name || "新分类").trim() || "新分类", dishes: [] };
+  state.collections.push(c);
+  saveCollections();
+  return c.id;
+}
+function dropFolder(fid) {
+  state.collections = state.collections.filter((c) => c.id !== fid);
+  saveCollections(); rebuildSaved();
+}
+function renameFolder(fid, name) {
+  const c = state.collections.find((x) => x.id === fid);
+  if (!c || !name || !name.trim()) return;
+  c.name = name.trim(); saveCollections();
+}
+
+function askDropFolder(id) {
+  const c = (state.collections || []).find((x) => x.id === id);
+  if (c && c.dishes.length && typeof confirm === "function") {
+    if (!confirm("删掉「" + c.name + "」这个分类？里面的 " + c.dishes.length + " 道菜也会一起没掉。")) return;
+  }
+  dropFolder(id);
+  state.sheet = null;
+  if (state.screen === "folder") { state.screen = "saved"; state.folder = null; }
+  toast("分类已删除");
+  render();
+}
+
+function defaultFolder() {
+  return (state.collections[0] || {}).id || "want";
+}
+
+function pushNav() {
+  state.stack = (state.stack || []).slice(-24);
+  state.stack.push({ s: state.screen, cur: state.current || null, folder: state.folder || null });
+}
+function navBack() {
+  const p = (state.stack || []).pop();
+  if (!p) { state.screen = "home"; state.folder = null; return; }
+  state.screen = p.s; state.current = p.cur; state.folder = p.folder;
+}
+
+let toastTimer = null;
+function toast(msg) {
+  try {
+    if (!document.body || !document.createElement) return;
+    let el = document.getElementById && document.getElementById("toast");
+    if (!el) { el = document.createElement("div"); el.id = "toast"; document.body.appendChild(el); }
+    el.textContent = msg;
+    el.classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("on"), 2200);
+  } catch (e) {}
+}
+
+function copyText(id) {
+  const d = DISHES.find((x) => x.id === id);
+  if (!d) return;
+  const text = "「" + d.name + "」做法（" + d.timeMin + " 分钟 · " + d.method + "）\n" +
+    d.steps.map((s, i) => (i + 1) + ". " + s).join("\n") +
+    (d.tips ? "\n💡 " + d.tips : "") + "\n—— 来自「今天吃什么」";
+  const fallback = () => { state.sheet = { type: "copy", text }; render(); };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => toast("已复制，去粘贴给朋友"), fallback);
+      return;
+    }
+  } catch (e) {}
+  fallback();
+}
+
+/* ---------- 今日推荐（人工精选，不刷新） ---------- */
+const DAILY = {
+  updated: "11 月",
+  groups: [
+    { title: "最近正流行", sub: "应季小热门，好上手、花不了多少钱", items: [
+      ["fanqie-xiaren", "虾仁滑嫩不柴，酸甜口的小孩也爱吃"],
+      ["suan-dou-jiao-rou-mo", "一勺酸豆角能扒两碗饭，成本很低"],
+      ["duojiao-zheng-jinzhengu", "上锅蒸 12 分钟，几乎不用看火"],
+      ["tangcu-oupian", "脆生生带一点酸甜，配油腻的菜正好"]
+    ]},
+    { title: "养身体的", sub: "少油少盐，蛋白质和纤维都照顾到", items: [
+      ["ji-yu-doufu-tang", "汤白味鲜，蛋白质好吸收"],
+      ["shang-tang-wa-wa-cai", "清爽解腻，还放了一点枸杞"],
+      ["zheng-nan-gua", "粗粮蒸着吃，甜味是南瓜自己的"],
+      ["xiao-mi-zhou", "胃不舒服的时候，来一碗"]
+    ]}
+  ]
+};
+
+/* ---------- 学习指南（外链指引） ---------- */
+const bili = (q) => "https://search.bilibili.com/all?keyword=" + encodeURIComponent(q);
+const xcf = (q) => "https://www.xiachufang.com/search/?keyword=" + encodeURIComponent(q);
+const LEARN = [
+  { lvl: "初", name: "初级", desc: "能把菜做熟、不糊锅，先建立手感。", items: [
+    { t: "刀工入门：切片、切丝、切丁", d: "先学握刀和按食材，别一上来就追求快。", u: bili("刀工 入门 切丝 教程"), k: "视频" },
+    { t: "火候：什么时候大火、什么时候小火", d: "家常菜九成的失败，都是火候不对。", u: bili("炒菜 火候 讲解"), k: "视频" },
+    { t: "新手十道家常菜", d: "番茄炒蛋、青椒肉丝这类，成功率最高。", u: xcf("新手 家常菜"), k: "图文" },
+    { t: "煎蛋、煮面、蒸米饭", d: "三件套练熟，一个人吃饭就不慌。", u: bili("煎蛋 技巧 溏心"), k: "视频" }
+  ]},
+  { lvl: "中", name: "中级", desc: "能一次做出两三道，配得上一桌饭。", items: [
+    { t: "红烧：炒糖色和收汁", d: "红烧肉、红烧排骨都是这一套。", u: bili("红烧 炒糖色 教程"), k: "视频" },
+    { t: "把汤炖成奶白色", d: "鱼汤骨头汤想白，关键先煎再冲开水。", u: bili("炖汤 奶白 技巧"), k: "视频" },
+    { t: "碗汁配比：鱼香、糖醋、宫保", d: "记住比例，二十道菜都能套。", u: bili("鱼香汁 糖醋汁 比例"), k: "视频" },
+    { t: "小炒的锅气从哪来", d: "锅够热、料沥干、下锅别急着翻。", u: bili("锅气 家常小炒 技巧"), k: "视频" }
+  ]},
+  { lvl: "高", name: "高级", desc: "请客不慌，能安排一桌有节奏的菜。", items: [
+    { t: "蒸菜火候：蒸鱼、蒸蛋、蒸排骨", d: "差几十秒，口感差很多。", u: bili("清蒸鱼 火候 时间"), k: "视频" },
+    { t: "卤水与酱货", d: "一锅卤水能反复用，卤蛋卤鸡爪都行。", u: bili("卤水 配方 家常"), k: "视频" },
+    { t: "宴客菜单怎么排", d: "几凉几热、荤素比例、哪道提前做。", u: xcf("宴客菜 菜单"), k: "图文" },
+    { t: "勾芡和收汁的区别", d: "什么菜该勾芡、芡要多厚。", u: bili("勾芡 技巧 收汁"), k: "视频" }
+  ]},
+  { lvl: "师", name: "大师", desc: "愿意钻进去，从技法层面理解做菜。", items: [
+    { t: "吊高汤", d: "清汤和奶汤，是两套做法。", u: bili("吊高汤 清汤 奶汤"), k: "视频" },
+    { t: "刀工进阶：花刀与剞刀", d: "鱿鱼、腰花能卷起来，靠的是刀法。", u: bili("花刀 教学 鱿鱼"), k: "视频" },
+    { t: "面点：和面、发面、擀皮", d: "包子饺子，从一团面开始。", u: bili("发面 包子 和面 教程"), k: "视频" },
+    { t: "川菜红油与复合辣", d: "红油的香和辣，是两件事。", u: bili("红油 熬制 辣椒面"), k: "视频" }
+  ]}
+];
+
+function openCollect(id) { state.sheet = { type: "collect", id }; }
+function closeSheet() { state.sheet = null; }
+
+/* ---------- 底部弹层 ---------- */
+function sheetHtml() {
+  const sh = state.sheet;
+  if (!sh) return "";
+  if (sh.type === "collect") {
+    const d = DISHES.find((x) => x.id === sh.id);
+    const rows = (state.collections || []).map((c) => {
+      const on = c.dishes.includes(sh.id);
+      return "<button class='sheet-row" + (on ? " on" : "") + "' data-collect='" + c.id + "'>" +
+        "<span class='ck'>" + (on ? "✓" : "") + "</span>" +
+        "<span class='nm'>" + c.name + "</span>" +
+        "<span class='ct'>" + c.dishes.length + " 道</span></button>";
+    }).join("");
+    return "<div class='sheet-mask' data-sheet-mask><div class='sheet'>" +
+      "<div class='sheet-head'><b>收藏到</b><span class='muted'>" + (d ? d.name : "") + "</span></div>" +
+      "<div class='sheet-rows'>" + rows + "</div>" +
+      "<div class='sheet-new'><input id='foldname' type='text' placeholder='新建分类，比如「周末做」' maxlength='12'>" +
+      "<button class='btn sm' data-folder-new>新建</button></div>" +
+      "<button class='btn primary block' data-sheet-close>好了</button>" +
+      "</div></div>";
+  }
+  if (sh.type === "newfolder" || sh.type === "rename") {
+    const ren = sh.type === "rename";
+    const c = ren ? state.collections.find((x) => x.id === sh.fid) : null;
+    if (ren && !c) return "";
+    return "<div class='sheet-mask' data-sheet-mask><div class='sheet'>" +
+      "<div class='sheet-head'><b>" + (ren ? "改个名字" : "新建分类") + "</b></div>" +
+      "<div class='sheet-new'><input id='foldname' type='text' value='" + (c ? c.name : "") + "' placeholder='比如「周末做」' maxlength='12'></div>" +
+      "<div class='row-btns'><button class='btn' data-sheet-close>取消</button>" +
+      "<button class='btn primary' data-folder-save='" + (ren ? sh.fid : "new") + "'>" + (ren ? "保存" : "建好了") + "</button></div>" +
+      (ren ? "<button class='link-del' data-folder-remove='" + sh.fid + "'>删除这个分类</button>" : "") +
+      "</div></div>";
+  }
+  if (sh.type === "copy") {
+    return "<div class='sheet-mask' data-sheet-mask><div class='sheet'>" +
+      "<div class='sheet-head'><b>复制这段</b><span class='muted'>长按选中后复制</span></div>" +
+      "<textarea class='copy-area' readonly rows='10'>" + sh.text + "</textarea>" +
+      "<button class='btn primary block' data-sheet-close>好了</button></div></div>";
+  }
+  return "";
+}
+
 function render() {
   const v = $("#app");
 
@@ -448,9 +650,11 @@ function render() {
       "<p class='sub'>回答几个问题，或者告诉我冰箱里有什么。</p></div>" +
       bigBtn("a", "🤔", "不知道吃什么", "问几个问题，按口味挑菜", "quiz") +
       bigBtn("b", "🥕", "家里有食材", "告诉我你有什么，我报菜名", "pantry") +
-      bigBtn("c", "🎯", "直接来一批", "不问条件，随便抽几道", "spin") +
+      bigBtn("c", "🔥", "今日推荐", "8 道精选，不刷新，挑一道就走", "daily") +
+      bigBtn("d", "📚", "学习指南", "从初级到大师，跟着视频练", "learn") +
+      bigBtn("e", "🎯", "直接来一批", "不问条件，随便抽几道", "spin") +
       recentStrip() +
-      (state.saved.size ? "<button class='home-link' data-go='saved'>★ 我的收藏<span>" + state.saved.size + " 道</span>›</button>" : "") +
+      "<button class='home-link' data-go='saved'>★ 我的收藏<span>" + state.saved.size + " 道</span>›</button>" +
       installTip() +
       "<p class='foot-note'>菜库 " + DISHES.length + " 道 · 点过「不想吃」的不会再出现</p>" +
     "</div>";
@@ -551,18 +755,80 @@ function render() {
   }
 
   if (state.screen === "saved") {
-    const list = [...state.saved].map((id) => DISHES.find((d) => d.id === id)).filter(Boolean);
+    const rows = (state.collections || []).map((c) => {
+      const names = c.dishes.slice(0, 3).map((id) => (DISHES.find((d) => d.id === id) || {}).name).filter(Boolean);
+      const sub = c.dishes.length
+        ? names.join(" · ") + (c.dishes.length > 3 ? " 等 " + c.dishes.length + " 道" : "")
+        : "还没放东西，看到想吃的点 ☆";
+      return "<div class='folder-row'>" +
+        "<button class='folder-open' data-folder='" + c.id + "'>" +
+        "<span class='fname'>" + c.name + "</span><span class='fsub'>" + sub + "</span></button>" +
+        "<button class='fedit' data-rename='" + c.id + "' aria-label='重命名'>✎</button>" +
+        "<button class='fedit' data-drop='" + c.id + "' aria-label='删除分类'>🗑</button></div>";
+    }).join("");
     v.innerHTML = "<div class='screen'>" +
-      "<div class='topbar'><button class='back' data-go='home' aria-label='返回'>‹</button>" +
-      "<h2 style='flex:1;font-size:19px'>我的收藏</h2><span class='pill'>" + list.length + " 道</span></div>" +
-      (list.length
-        ? "<p class='result-sub'>都在这里了，点一下看做法，星星点掉就从收藏里去掉。</p><div class='grid'>" + list.map((d, i) => card(d, i)).join("") + "</div>"
-        : "<div class='empty'><span class='big-emoji'>⭐</span>还没有收藏。<br>看到想吃的，点卡片右上角的星星。</div>") +
+      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
+      "<h2 style='flex:1;font-size:19px'>我的收藏</h2><span class='pill'>" + state.saved.size + " 道</span></div>" +
+      "<p class='result-sub'>分几个文件夹放着，点铅笔能改名。</p>" +
+      "<div class='folders'>" + rows + "</div>" +
+      "<button class='btn block' data-newfolder>+ 新建分类</button>" +
       "</div>";
   }
 
+  if (state.screen === "folder") {
+    const c = (state.collections || []).find((x) => x.id === state.folder);
+    const list = c ? c.dishes.map((id) => DISHES.find((d) => d.id === id)).filter(Boolean) : [];
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
+      "<h2 style='flex:1;font-size:19px'>" + (c ? c.name : "分类") + "</h2><span class='pill'>" + list.length + " 道</span></div>" +
+      (list.length
+        ? "<p class='result-sub'>点卡片看做法；点星星可以取消收藏。</p><div class='grid'>" + list.map((d, i) => card(d, i)).join("") + "</div>"
+        : "<div class='empty'><span class='big-emoji'>🍽</span>这个分类还是空的。<br>在菜谱右上角点 ☆ 就能收进来。</div>") +
+      "</div>";
+  }
+
+  if (state.screen === "daily") {
+    const groups = DAILY.groups.map((g) => {
+      const items = g.items.map((it) => ({ d: DISHES.find((x) => x.id === it[0]), why: it[1] })).filter((x) => x.d);
+      if (!items.length) return "";
+      return "<div class='group-title' style='margin-top:20px'>" + g.title + "<span class='n'>" + items.length + "</span></div>" +
+        "<p class='result-sub' style='margin:-4px 0 12px'>" + g.sub + "</p>" +
+        "<div class='grid'>" + items.map((x, i) => card(x.d, i, x.why)).join("") + "</div>";
+    }).join("");
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
+      "<div class='result-head'><h2>今日推荐</h2><span class='pill'>" + DAILY.updated + " 精选</span></div></div>" +
+      "<p class='result-sub'>一共 8 道，不刷新。都是好上手、花钱不多的。</p>" +
+      groups +
+      "<p class='foot-note'>人工挑的，打包在 App 里，没网也能看。</p>" +
+      "</div>";
+  }
+
+  if (state.screen === "learn") {
+    const lv = state.learnLevel || "初";
+    const cur = LEARN.find((x) => x.lvl === lv) || LEARN[0];
+    v.innerHTML = "<div class='screen'>" +
+      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
+      "<h2 style='flex:1;font-size:19px'>学习指南</h2></div>" +
+      "<p class='result-sub'>按难度分四级，点进去是站外的视频或图文教程。</p>" +
+      "<div class='lvltabs'>" + LEARN.map((x) =>
+        "<button class='chipbtn" + (x.lvl === lv ? " sel" : "") + "' data-lvl='" + x.lvl + "'>" + x.name + "</button>").join("") +
+      "</div>" +
+      "<p class='sub' style='margin:2px 0 14px'>" + cur.desc + "</p>" +
+      "<div class='learn-list'>" + cur.items.map((it) =>
+        "<a class='learn-item' href='" + it.u + "' target='_blank' rel='noopener'>" +
+        "<span class='lk'>" + it.k + "</span>" +
+        "<span class='lt'><span class='t'>" + it.t + "</span><span class='d'>" + it.d + "</span></span>" +
+        "<span class='arrow'>›</span></a>").join("") +
+      "</div>" +
+      "<p class='foot-note'>打开会在浏览器里搜 B 站或下厨房，不占 App 空间。</p>" +
+      "</div>";
+  }
+
+
   if (state.screen === "detail") {
     const d = DISHES.find((x) => x.id === state.current);
+    if (!d) { state.screen = "home"; return render(); }
     const no = state.disliked.has(d.id);
     const sv = state.saved.has(d.id);
     const ate = daysSinceEaten(d.id) < 1;
@@ -575,9 +841,7 @@ function render() {
       "<button class='photo' data-photo='" + d.id + "'>" + (heroSrc || !photosReady ? "📷 更多图片" : "🔍 网上搜图") + "</button></div>";
     v.innerHTML = "<div class='screen'>" +
       "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
-      "<span class='pill'>" + d.region + "菜</span><span class='pill'>大众度 " + d.popularity + "</span>" +
-      "<span style='flex:1'></span>" +
-      "<button class='icon-btn' data-share='" + d.id + "' aria-label='分享'>↗</button></div>" +
+      "<span class='pill'>" + d.region + "菜</span><span class='pill'>大众度 " + d.popularity + "</span></div>" +
       hero +
       "<h1 style='font-size:25px;margin:0 0 12px'>" + d.name + "</h1>" +
       "<div class='detail-meta'>" +
@@ -590,8 +854,8 @@ function render() {
       "</div>" + (d.tips ? "<div class='tip'>💡 " + d.tips + "</div>" : "") +
       "<div class='actions'>" +
       "<button class='btn" + (sv ? " primary" : "") + "' data-save='" + d.id + "'>" + (sv ? "★ 已收藏" : "☆ 收藏") + "</button>" +
-      "<button class='btn" + (ate ? " done" : "") + "' data-eat='" + d.id + "'" + (ate ? " disabled" : "") + ">" +
-      (ate ? "✓ 今天吃过了" : "🍽 吃过了") + "</button></div>" +
+      "<button class='btn" + (ate ? " done" : "") + "' data-eat='" + d.id + "'>" + (ate ? "✓ 今天吃过了" : "🍽 吃过了") + "</button></div>" +
+      "<button class='btn block copy-btn' data-copy='" + d.id + "'>📋 复制做法发给朋友</button>" +
       "<button class='dislike" + (no ? " on" : "") + "' data-dislike='" + d.id + "'>" + (no ? "✓ 已标记不想吃，不会再推" : "🙅 以后别再推这道") + "</button>" +
       nearHtml(d) +
       "<div class='sticky'><div class='inner'>" +
@@ -599,7 +863,12 @@ function render() {
       "<a class='btn primary' href='" + SEARCH.video(d.name) + "' target='_blank' rel='noopener'>▶ 看视频</a>" +
       "</div></div></div>";
   }
-  window.scrollTo(0, 0);
+
+  const shHtml = sheetHtml();
+  if (shHtml) v.innerHTML += shHtml;
+  const keep = state.keepScroll || 0;
+  state.keepScroll = 0;
+  window.scrollTo(0, keep);
   if (typeof document.querySelectorAll === "function") document.querySelectorAll(".thumb img").forEach(function (im) {
     const swap = function () {
       const remote = im.getAttribute("data-remote");
@@ -740,6 +1009,35 @@ function closeWheel() {
 }
 
 document.addEventListener("click", (e) => {
+  const mask = e.target.closest("[data-sheet-mask]");
+  if (mask && mask.dataset && mask.dataset.sheetMask !== undefined && e.target === mask) {
+    closeSheet();
+    return render();
+  }
+  const sb = e.target.closest("[data-sheet-close],[data-collect],[data-folder-new]");
+  if (sb && sb.dataset && (sb.dataset.sheetClose !== undefined || sb.dataset.collect !== undefined || sb.dataset.folderNew !== undefined)) {
+    if (sb.dataset.sheetClose !== undefined) { closeSheet(); return render(); }
+    if (sb.dataset.collect !== undefined) {
+      const sid = state.sheet && state.sheet.id;
+      const c = (state.collections || []).find((x) => x.id === sb.dataset.collect);
+      if (sid && c) {
+        if (c.dishes.includes(sid)) removeFromFolder(sb.dataset.collect, sid);
+        else addToFolder(sb.dataset.collect, sid);
+      }
+      state.keepScroll = (typeof window !== "undefined" && window.scrollY) || 0;
+      return render();
+    }
+    if (sb.dataset.folderNew !== undefined) {
+      const inp = $("#foldname");
+      const name = inp && inp.value ? inp.value.trim() : "";
+      if (!name) return;
+      const fid = createFolder(name);
+      const sid = state.sheet && state.sheet.id;
+      if (sid) addToFolder(fid, sid);
+      state.keepScroll = (typeof window !== "undefined" && window.scrollY) || 0;
+      return render();
+    }
+  }
   const wb = e.target.closest("[data-wheel-spin],[data-wheel-go],[data-wheel-close]");
   if (wb && (wb.dataset.wheelSpin !== undefined || wb.dataset.wheelGo !== undefined || wb.dataset.wheelClose !== undefined)) {
     if (wb.dataset.wheelSpin !== undefined) { wheelSpin(); return; }
@@ -749,7 +1047,8 @@ document.addEventListener("click", (e) => {
       const d = wheelState.winner;
       closeWheel();
       if (!d) return;
-      state.current = d.id; state.from = state.screen; state.screen = "detail";
+      pushNav();
+      state.current = d.id; state.screen = "detail";
       return render();
     }
   }
@@ -771,7 +1070,7 @@ document.addEventListener("click", (e) => {
     else openPhoto(lbState.id, lbState.i + 1);
     return;
   }
-  const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft],[data-save],[data-eat],[data-share],[data-photo]");
+  const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft],[data-save],[data-star],[data-eat],[data-copy],[data-photo],[data-folder],[data-rename],[data-drop],[data-newfolder],[data-folder-save],[data-folder-remove],[data-lvl]");
   if (!t) return;
   if (t.dataset.photo) {
     const id = t.dataset.photo;
@@ -795,35 +1094,35 @@ document.addEventListener("click", (e) => {
     }
     return render();
   }
-  if (t.dataset.save) {
-    const id = t.dataset.save;
+  if (t.dataset.star) {
+    const id = t.dataset.star;
     const on = !state.saved.has(id);
-    if (on) state.saved.add(id); else state.saved.delete(id);
-    localStorage.setItem("saved", JSON.stringify([...state.saved]));
-    // 同一道菜的星星可能同时出现在卡片和详情页，全同步，不整页重刷
-    document.querySelectorAll("[data-save='" + id + "']").forEach((el) => {
-      if (el.classList.contains("star")) { el.classList.toggle("on", on); el.textContent = on ? "★" : "☆"; }
-      else { el.classList.toggle("primary", on); el.textContent = on ? "★ 已收藏" : "☆ 收藏"; }
-    });
-    if (state.screen === "saved") return render();   // 在收藏页取消，卡片要消失
-    return;
+    if (on) addToFolder(defaultFolder(), id); else removeEverywhere(id);
+    toast(on ? "已收藏到「" + ((state.collections[0] || {}).name || "我想吃") + "」" : "已取消收藏");
+    if (state.screen === "saved" || state.screen === "folder") return render();
+    if (t.classList && t.classList.toggle) {
+      t.classList.toggle("on", on);
+      t.textContent = on ? "★" : "☆";
+      return;
+    }
+    return render();
   }
+  if (t.dataset.save) {
+    openCollect(t.dataset.save);
+    state.keepScroll = (typeof window !== "undefined" && window.scrollY) || 0;
+    return render();
+  }
+  if (t.dataset.copy) { return copyText(t.dataset.copy); }
   if (t.dataset.eat) {
-    markEaten(t.dataset.eat);
-    t.textContent = "✓ 今天吃过了";
-    t.classList.add("done");
-    t.disabled = true;
+    const id = t.dataset.eat;
+    const on = daysSinceEaten(id) >= 1;
+    if (on) { markEaten(id); toast("记下了，三天内少推这道"); }
+    else { unmarkEaten(id); toast("已取消「今天吃过了」"); }
+    t.textContent = on ? "✓ 今天吃过了" : "🍽 吃过了";
+    if (t.classList) t.classList.toggle("done", on);
     return;
   }
-  if (t.dataset.share) {
-    const d = DISHES.find((x) => x.id === state.current);
-    const url = location.origin + location.pathname + "#" + d.id;
-    if (navigator.share) { navigator.share({ title: d.name, text: "今天吃「" + d.name + "」，做法：" }).catch(() => {}); return; }
-    const text = "今天吃「" + d.name + "」，做法：" + url;
-    if (navigator.clipboard) { navigator.clipboard.writeText(text).then(() => { t.textContent = "✓"; }).catch(() => {}); return; }
-    t.textContent = "✓";
-    return;
-  }
+
   if (t.dataset.ans !== undefined) {
     const qs = activeQs();
     const Q = qs[Math.min(state.qi, qs.length - 1)];
@@ -843,8 +1142,8 @@ document.addEventListener("click", (e) => {
     return;
   }
   if (t.dataset.id) {
+    pushNav();
     state.current = t.dataset.id;
-    state.from = state.screen;
     state.screen = "detail";
     return render();
   }
@@ -860,16 +1159,45 @@ document.addEventListener("click", (e) => {
     }
     return render();
   }
+  if (t.dataset.folder) {
+    pushNav();
+    state.folder = t.dataset.folder;
+    state.screen = "folder";
+    return render();
+  }
+  if (t.dataset.rename) { state.sheet = { type: "rename", fid: t.dataset.rename }; return render(); }
+  if (t.dataset.drop) return askDropFolder(t.dataset.drop);
+  if (t.dataset.newfolder !== undefined) { state.sheet = { type: "newfolder" }; return render(); }
+  if (t.dataset.folderSave) {
+    const inp = $("#foldname");
+    const name = inp && inp.value ? inp.value.trim() : "";
+    if (!name) return;
+    if (t.dataset.folderSave === "new") createFolder(name);
+    else renameFolder(t.dataset.folderSave, name);
+    state.sheet = null;
+    toast("已保存");
+    return render();
+  }
+  if (t.dataset.folderRemove) return askDropFolder(t.dataset.folderRemove);
+  if (t.dataset.lvl) { state.learnLevel = t.dataset.lvl; return render(); }
   const go = t.dataset.go;
-  if (go === "saved") { state.screen = "saved"; return render(); }
-  if (go === "home") { state.screen = "home"; state.qi = 0; state.answers = {}; state.soft = new Set(); }
-  else if (go === "quiz") { state.screen = "quiz"; state.qi = 0; state.answers = {}; state.soft = new Set(); }
+  if (!go) return;
+  if (go === "back") { navBack(); return render(); }
+  if (go === "home") {
+    state.screen = "home"; state.qi = 0; state.answers = {}; state.soft = new Set();
+    state.stack = []; state.folder = null; state.sheet = null;
+    return render();
+  }
+  if (go === "one") { openWheel(); return; }
+  if (go !== state.screen) pushNav();
+  if (go === "quiz") { state.screen = "quiz"; state.qi = 0; state.answers = {}; state.soft = new Set(); }
   else if (go === "soft") { state.screen = "soft"; }
   else if (go === "result") { state.screen = "result"; pick(true); }
   else if (go === "refresh") { state.screen = "result"; pick(false); }
   else if (go === "spin") { state.answers = {}; state.soft = new Set(); state.shown = new Set(); state.screen = "result"; pick(true); }
-  else if (go === "one") { openWheel(); return; }
-  else if (go === "back") { state.screen = state.from || "home"; }
+  else if (go === "saved") { state.screen = "saved"; }
+  else if (go === "daily") { state.screen = "daily"; }
+  else if (go === "learn") { state.screen = "learn"; }
   else if (go === "pantry") {
     const inp = $("#pantry"); if (inp) state.pantryText = inp.value;
     state.screen = "pantry";
@@ -908,9 +1236,17 @@ document.addEventListener("keydown", (e) => {
   try { state.disliked = new Set(JSON.parse(localStorage.getItem("disliked") || "[]")); } catch (e) {}
   try { state.saved = new Set(JSON.parse(localStorage.getItem("saved") || "[]")); } catch (e) {}
   try { state.eaten = JSON.parse(localStorage.getItem("eaten") || "[]") || []; } catch (e) { state.eaten = []; }
+  try { state.collections = JSON.parse(localStorage.getItem("collections") || "null"); } catch (e) { state.collections = null; }
+  if (!Array.isArray(state.collections) || !state.collections.length) {
+    state.collections = SEED_FOLDERS.map((f) => ({ id: f.id, name: f.name, dishes: [] }));
+    if (state.saved && state.saved.size) state.collections[0].dishes = [...state.saved];
+    saveCollections();
+  }
+  state.collections.forEach((c) => { if (!Array.isArray(c.dishes)) c.dishes = []; });
+  rebuildSaved();
   const hash = (typeof window !== "undefined" && window.location && window.location.hash) || "";
   const deep = hash.replace("#", "").trim();
-  if (deep && DISHES.some((d) => d.id === deep)) { state.current = deep; state.from = "home"; state.screen = "detail"; }
+  if (deep && DISHES.some((d) => d.id === deep)) { state.current = deep; state.screen = "detail"; }
   render();
 })();
 
