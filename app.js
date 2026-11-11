@@ -649,7 +649,30 @@ const LEARN = [
 function openCollect(id) { state.sheet = { type: "collect", id }; }
 function closeSheet() { state.sheet = null; }
 
-/* ---------- 厨房小游戏（贪吃蛇 / 吃豆） ---------- */
+/* ---------- 小游戏（贪吃蛇 / 吃豆 / 敲蛋） ---------- */
+const MINI_KEY = "mini";
+const MINI = { points: 0, best: {} };
+
+function loadMini() {
+  try {
+    const raw = localStorage.getItem(MINI_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    MINI.points = o.points || 0;
+    MINI.best = o.best || {};
+  } catch (e) {}
+}
+function saveMini() {
+  try { localStorage.setItem(MINI_KEY, JSON.stringify({ points: MINI.points, best: MINI.best })); } catch (e) {}
+}
+loadMini();
+
+const GAME_META = {
+  snake: { t: "贪吃蛇", ico: "🐍", d: "吃番茄，每 5 个升一关，越来越快。" },
+  pac: { t: "吃豆", ico: "😋", d: "吃光米粒过关，鬼一关多一只。" },
+  whack: { t: "敲蛋", ico: "🥚", d: "敲中冒头的蛋，每 10 个升一关。" }
+};
+
 const GAME_QUOTES = [
   "炒任何菜之前，锅要烧到微微冒烟再下油，食材才不粘。",
   "炖肉中途加水只能加开水，冷水会让肉收紧。",
@@ -666,41 +689,129 @@ const GAME_QUOTES = [
 let gameState = null;
 
 function stopGame() {
-  if (gameState) {
-    if (gameState.raf) cancelAnimationFrame(gameState.raf);
-    gameState = null;
-  }
+  const g = gameState;
+  gameState = null;
+  if (!g) return;
+  if (g.raf) cancelAnimationFrame(g.raf);
+  if (g.timer) clearTimeout(g.timer);
+  if (g.goTimer) clearTimeout(g.goTimer);
+  if (g.banner) clearTimeout(g.banner);
 }
 
-function setScore(n) {
-  const el = document.getElementById("game-score");
-  if (el) el.textContent = String(n);
+function putText(id, val) {
+  const el = document.getElementById && document.getElementById(id);
+  if (el) el.textContent = String(val);
 }
 
-function showGameOver(msg, win) {
+function setHud() {
+  const g = gameState;
+  if (!g) return;
+  putText("game-score", g.score);
+  putText("game-level", g.level);
+  putText("game-pts", g.earned);
+  let prog = "";
+  if (g.kind === "snake") prog = (g.score % 5) + " / 5";
+  else if (g.kind === "pac") prog = g.dots.length + " 粒";
+  else prog = (g.score % 10) + " / 10 · 漏 " + g.misses + "/3";
+  putText("game-prog", prog);
+}
+
+function banner(text) {
+  const el = document.getElementById && document.getElementById("game-banner");
+  if (!el) return;
+  el.textContent = text;
+  el.hidden = false;
+  el.classList.add("on");
+  const g = gameState;
+  if (!g) return;
+  if (g.banner) clearTimeout(g.banner);
+  g.banner = setTimeout(() => {
+    el.classList.remove("on");
+    el.hidden = true;
+  }, 1500);
+}
+
+function levelUp() {
+  const g = gameState;
+  if (!g) return;
+  g.level += 1;
+  g.earned += 10;
+  MINI.points += 10;
+  saveMini();
+  banner("第 " + g.level + " 关  +10 积分");
+  setHud();
+}
+
+function finish(msg) {
   const g = gameState;
   if (!g || g.over) return;
   g.over = true;
-  const el = document.getElementById("game-over");
+  if (g.raf) cancelAnimationFrame(g.raf);
+  if (g.timer) clearTimeout(g.timer);
+  const prev = MINI.best[g.kind] || { level: 1, score: 0 };
+  MINI.best[g.kind] = { level: Math.max(prev.level, g.level), score: Math.max(prev.score, g.score) };
+  const bonus = Math.floor(g.score / 4);
+  MINI.points += bonus;
+  saveMini();
+  setHud();
+  const el = document.getElementById && document.getElementById("game-over");
   if (!el) return;
-  const q = GAME_QUOTES[(g.quoteIdx || 0) % GAME_QUOTES.length];
+  const q = GAME_QUOTES[Math.floor(Math.random() * GAME_QUOTES.length)];
   el.innerHTML = "<div class='go-card'>" +
     "<div class='go-msg'>" + msg + "</div>" +
+    "<div class='go-stats'><span>得分 <b>" + g.score + "</b></span>" +
+    "<span>关卡 <b>" + g.level + "</b></span>" +
+    "<span>本局积分 <b>+" + (g.earned + bonus) + "</b></span></div>" +
     "<p class='go-quote'>" + q + "</p>" +
     "<div class='row-btns'><button class='btn' data-game-retry='" + g.kind + "'>再来一局</button>" +
-    "<button class='btn primary' data-go='back'>选别的</button></div></div>";
+    "<button class='btn primary' data-go='back'>返回小游戏</button></div></div>";
   el.hidden = false;
+}
+
+function bindSwipe() {
+  const wrap = document.querySelector && document.querySelector(".game-wrap");
+  if (!wrap || !wrap.addEventListener || wrap.__swipe) return;
+  wrap.__swipe = true;
+  let sx = 0, sy = 0, on = false;
+  wrap.addEventListener("pointerdown", (e) => { on = true; sx = e.clientX; sy = e.clientY; });
+  wrap.addEventListener("pointerup", (e) => {
+    if (!on) return;
+    on = false;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) < 16 && Math.abs(dy) < 16) return;
+    if (Math.abs(dx) > Math.abs(dy)) gameDir(dx > 0 ? "right" : "left");
+    else gameDir(dy > 0 ? "down" : "up");
+  });
+  wrap.addEventListener("pointercancel", () => { on = false; });
 }
 
 function mountGame(kind) {
   stopGame();
-  if (typeof document === "undefined" || typeof document.getElementById !== "function") return;
-  const cv = document.getElementById("game-canvas");
-  if (!cv || typeof cv.getContext !== "function") return;
-  const ctx = cv.getContext("2d");
-  if (!ctx) return;
+  if (typeof document === "undefined" || typeof document.getElementById !== "function") { gameState = null; return; }
   const dpr = Math.min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1);
-  const g = { kind: kind, cv: cv, ctx: ctx, over: false, score: 0, dpr: dpr, quoteIdx: Math.floor(Math.random() * GAME_QUOTES.length) };
+  const g = { kind: kind, level: 1, score: 0, earned: 0, over: false, dpr: dpr };
+  gameState = g;
+  const ov = document.getElementById("game-over");
+  if (ov) { ov.hidden = true; ov.innerHTML = ""; }
+  const bn = document.getElementById("game-banner");
+  if (bn) { bn.hidden = true; bn.classList.remove("on"); }
+  if (kind === "whack") {
+    g.misses = 0;
+    g.gapMs = 220;
+    g.liveMs = 1000;
+    setHud();
+    g.hold = 700;
+    banner("预备…");
+    g.goTimer = setTimeout(() => banner("开始"), 700);
+    g.timer = setTimeout(() => whackCycle(g), 1100);
+    return;
+  }
+  const cv = document.getElementById("game-canvas");
+  if (!cv || typeof cv.getContext !== "function") { setHud(); return; }
+  const ctx = cv.getContext("2d");
+  if (!ctx) { setHud(); return; }
+  g.cv = cv;
+  g.ctx = ctx;
   if (kind === "snake") {
     g.G = 15;
     cv.width = 360 * dpr;
@@ -709,44 +820,26 @@ function mountGame(kind) {
     g.snake = [{ x: 7, y: 7 }, { x: 6, y: 7 }, { x: 5, y: 7 }];
     g.dir = { x: 1, y: 0 };
     g.nextDir = { x: 1, y: 0 };
-    g.stepMs = 165;
+    g.stepMs = 200;
     g.acc = 0;
     g.food = snakeFood(g);
   } else {
-    const rows = PAC_MAZE;
-    g.rows = rows.length;
-    g.cols = rows[0].length;
     g.cell = 24 * dpr;
+    g.rows = PAC_MAZE.length;
+    g.cols = PAC_MAZE[0].length;
     cv.width = g.cell * g.cols;
     cv.height = g.cell * g.rows;
-    g.walls = [];
-    g.dots = [];
-    g.ghosts = [];
-    g.player = { x: 1, y: 1 };
-    g.dir = { x: 1, y: 0 };
-    g.nextDir = { x: 1, y: 0 };
-    g.stepMs = 130;
+    g.stepMs = 140;
     g.acc = 0;
-    g.ghostMs = 420;
     g.gAcc = 0;
-    for (let y = 0; y < g.rows; y++)
-      for (let x = 0; x < g.cols; x++) {
-        const ch = rows[y][x];
-        if (ch === "#") g.walls.push({ x: x, y: y });
-        else if (ch === ".") g.dots.push({ x: x, y: y });
-      }
-    const free = g.dots.filter((d) => d.y > 3 && Math.abs(d.x - 1) + Math.abs(d.y - 1) > 2);
-    for (let i = 0; i < 2 && free.length; i++) {
-      const d = free[Math.floor(Math.random() * free.length)];
-      g.dots = g.dots.filter((p) => !(p.x === d.x && p.y === d.y));
-      g.ghosts.push({ x: d.x, y: d.y, dir: { x: 1, y: 0 } });
-    }
+    pacSetup(g);
   }
-  gameState = g;
-  setScore(0);
-  const ov = document.getElementById("game-over");
-  if (ov) { ov.hidden = true; ov.innerHTML = ""; }
-  g.last = performance.now();
+  bindSwipe();
+  setHud();
+  g.last = typeof performance !== "undefined" ? performance.now() : Date.now();
+  g.hold = 700;
+  banner("预备…");
+  drawBoard(g);
   g.raf = requestAnimationFrame((ts) => gameTick(ts));
 }
 
@@ -779,11 +872,47 @@ function pacBlocked(g, x, y) {
   return g.walls.some((w) => w.x === x && w.y === y);
 }
 
+function pacSetup(g) {
+  g.walls = [];
+  g.dots = [];
+  g.ghosts = [];
+  for (let y = 0; y < g.rows; y++)
+    for (let x = 0; x < g.cols; x++) {
+      const ch = PAC_MAZE[y][x];
+      if (ch === "#") g.walls.push({ x: x, y: y });
+      else if (ch === ".") g.dots.push({ x: x, y: y });
+    }
+  g.player = { x: 1, y: 1 };
+  g.dir = { x: 1, y: 0 };
+  g.nextDir = { x: 1, y: 0 };
+  g.ghostMs = Math.max(320, 560 - (g.level - 1) * 60);
+  const n = Math.min(3, g.level);
+  const free = g.dots.filter((d) => d.y > 3 && Math.abs(d.x - 1) + Math.abs(d.y - 1) > 3);
+  for (let i = 0; i < n && free.length; i++) {
+    const pick = free[Math.floor(Math.random() * free.length)];
+    free.splice(free.indexOf(pick), 1);
+    g.dots = g.dots.filter((d) => !(d.x === pick.x && d.y === pick.y));
+    g.ghosts.push({ x: pick.x, y: pick.y, dir: { x: 1, y: 0 } });
+  }
+}
+
+function drawBoard(g) {
+  if (g.kind === "snake") drawSnake(g);
+  else if (g.kind === "pac") drawPac(g);
+}
+
 function gameTick(ts) {
   const g = gameState;
-  if (!g) return;
-  const dt = Math.min(60, ts - g.last);
+  if (!g || g.over) return;
+  const dt = Math.min(80, ts - g.last);
   g.last = ts;
+  if (g.hold > 0) {
+    g.hold -= dt;
+    if (g.hold <= 0) banner("开始");
+    drawBoard(g);
+    g.raf = requestAnimationFrame((t) => gameTick(t));
+    return;
+  }
   g.acc += dt;
   if (g.kind === "snake") {
     while (g.acc >= g.stepMs) { g.acc -= g.stepMs; snakeStep(g); }
@@ -805,15 +934,18 @@ function snakeStep(g) {
   const nx = head.x + g.dir.x;
   const ny = head.y + g.dir.y;
   if (nx < 0 || ny < 0 || nx >= g.G || ny >= g.G || g.snake.some((s) => s.x === nx && s.y === ny)) {
-    showGameOver("撞上了。");
+    finish("撞墙了。");
     return;
   }
   g.snake.unshift({ x: nx, y: ny });
   if (g.food && nx === g.food.x && ny === g.food.y) {
     g.score += 1;
-    setScore(g.score);
     g.food = snakeFood(g);
-    g.stepMs = Math.max(85, g.stepMs - 4);
+    setHud();
+    if (g.score % 5 === 0) {
+      g.stepMs = Math.max(110, g.stepMs - 12);
+      levelUp();
+    }
   } else {
     g.snake.pop();
   }
@@ -830,15 +962,16 @@ function pacStep(g) {
   if (!pacBlocked(g, nx, ny)) { g.player.x = nx; g.player.y = ny; }
   const before = g.dots.length;
   g.dots = g.dots.filter((d) => !(d.x === g.player.x && d.y === g.player.y));
-  if (g.dots.length !== before) {
-    g.score += 1;
-    setScore(g.score);
-  }
+  if (g.dots.length !== before) { g.score += 1; setHud(); }
   if (g.ghosts.some((gh) => gh.x === g.player.x && gh.y === g.player.y)) {
-    showGameOver("被逮到了。");
+    finish("被逮到了。");
     return;
   }
-  if (!g.dots.length) showGameOver("米粒吃完了。", true);
+  if (!g.dots.length) {
+    levelUp();
+    pacSetup(g);
+    setHud();
+  }
 }
 
 function ghostStep(g) {
@@ -850,7 +983,44 @@ function ghostStep(g) {
     const ny = gh.y + gh.dir.y;
     if (!pacBlocked(g, nx, ny)) { gh.x = nx; gh.y = ny; }
     else gh.dir = dirs[Math.floor(Math.random() * 4)];
-    if (gh.x === g.player.x && gh.y === g.player.y) { showGameOver("被逮到了。"); return; }
+    if (gh.x === g.player.x && gh.y === g.player.y) { finish("被逮到了。"); return; }
+  }
+}
+
+function whackCycle(g) {
+  if (!gameState || gameState !== g || g.over) return;
+  const holes = document.querySelectorAll("[data-hole]");
+  if (!holes.length) return;
+  const idx = Math.floor(Math.random() * holes.length);
+  g.alive = idx;
+  if (holes[idx].classList) holes[idx].classList.add("has");
+  g.timer = setTimeout(() => {
+    if (!gameState || gameState !== g || g.over) return;
+    const h = document.querySelectorAll("[data-hole]")[idx];
+    if (h && h.classList) h.classList.remove("has");
+    if (g.alive === idx) {
+      g.alive = -1;
+      g.misses += 1;
+      setHud();
+      if (g.misses >= 3) { finish("漏了 3 个蛋。"); return; }
+    }
+    g.timer = setTimeout(() => whackCycle(g), g.gapMs);
+  }, g.liveMs);
+}
+
+function whackHit(i) {
+  const g = gameState;
+  if (!g || g.kind !== "whack" || g.over) return;
+  if (g.alive !== i) return;
+  const h = document.querySelectorAll("[data-hole]")[i];
+  if (h && h.classList) h.classList.remove("has");
+  g.alive = -1;
+  g.score += 1;
+  setHud();
+  if (g.score % 10 === 0) {
+    g.gapMs = Math.max(160, g.gapMs - 45);
+    g.liveMs = Math.max(600, g.liveMs - 70);
+    levelUp();
   }
 }
 
@@ -866,14 +1036,15 @@ function roundRect(ctx, x, y, w, h, r) {
 
 function drawSnake(g) {
   const ctx = g.ctx, c = g.cell;
-  ctx.clearRect(0, 0, g.cv.width, g.cv.height);
+  const W = g.cv.width, H = g.cv.height;
+  ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = "#f7efe2";
-  ctx.fillRect(0, 0, g.cv.width, g.cv.height);
+  ctx.fillRect(0, 0, W, H);
   ctx.strokeStyle = "rgba(190,160,130,.18)";
   ctx.lineWidth = Math.max(1, c * 0.04);
   for (let i = 1; i < g.G; i++) {
-    ctx.beginPath(); ctx.moveTo(i * c, 0); ctx.lineTo(i * c, g.cv.height); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, i * c); ctx.lineTo(g.cv.width, i * c); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(i * c, 0); ctx.lineTo(i * c, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * c); ctx.lineTo(W, i * c); ctx.stroke();
   }
   if (g.food) {
     ctx.font = Math.floor(c * 0.8) + "px serif";
@@ -890,9 +1061,10 @@ function drawSnake(g) {
 
 function drawPac(g) {
   const ctx = g.ctx, c = g.cell;
-  ctx.clearRect(0, 0, g.cv.width, g.cv.height);
+  const W = g.cv.width, H = g.cv.height;
+  ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = "#1f1a17";
-  ctx.fillRect(0, 0, g.cv.width, g.cv.height);
+  ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = "#3a2f28";
   for (const w of g.walls) {
     roundRect(ctx, w.x * c + 1, w.y * c + 1, c - 2, c - 2, Math.max(2, c * 0.16));
@@ -918,14 +1090,6 @@ function gameDir(key) {
   const d = map[key];
   if (!d) return;
   g.nextDir = d;
-}
-
-if (typeof document !== "undefined" && document.addEventListener) {
-  document.addEventListener("keydown", function (e) {
-    if (state.screen !== "game") return;
-    const k = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", w: "up", s: "down", a: "left", d: "right" }[e.key];
-    if (k) { e.preventDefault(); gameDir(k); }
-  });
 }
 
 /* ---------- 底部弹层 ---------- */
@@ -994,9 +1158,9 @@ function render() {
       bigBtn("c", "🔥", "今日推荐", "两组各 4 道，挑一组就走", "daily") +
       bigBtn("d", "📚", "学习指南", "从初级到大师，跟着视频练", "learn") +
       bigBtn("e", "🎯", "直接来一批", "不问条件，随便抽几道", "spin") +
+      bigBtn("f", "🎮", "小游戏", "贪吃蛇、吃豆、敲蛋，越玩越难", "games") +
       recentStrip() +
       "<button class='home-link' data-go='saved'>★ 我的收藏<span>" + state.saved.size + " 道</span>›</button>" +
-      "<button class='home-link' data-go='games'>🎮 厨房小游戏<span>两局</span>›</button>" +
       installTip() +
       "<p class='foot-note'>菜库 " + DISHES.length + " 道 · 点过「不想吃」的不会再出现</p>" +
     "</div>";
@@ -1170,41 +1334,55 @@ function render() {
       "<p class='sub' style='margin:2px 0 16px'>" + cur.desc + "</p>" +
       topics +
       (practice ? "<div class='group-title'>练手菜</div><div class='near'>" + practice + "</div>" : "") +
-      "<button class='learn-game' data-go='games'>" +
-      "<span class='lg-t'>厨房小游戏</span><span class='lg-d'>贪吃蛇、吃豆，玩完给一句做菜要点</span><span class='arrow'>›</span></button>" +
       "<p class='foot-note'>教程在站外打开，不占安装包体积。</p>" +
       "</div>";
   }
 
   if (state.screen === "games") {
-    const list = [
-      { id: "snake", t: "贪吃蛇", d: "吃番茄，撞墙或咬到自己结束。" },
-      { id: "pac", t: "吃豆", d: "吃完所有米粒，躲开两只鬼。" }
-    ];
+    const cards = Object.keys(GAME_META).map((k) => {
+      const m = GAME_META[k];
+      const bs = MINI.best[k];
+      const best = bs ? "最高 第 " + bs.level + " 关 · " + bs.score + " 分" : "还没玩过";
+      return "<button class='game-card' data-game='" + k + "'>" +
+        "<span class='gc-ico'>" + m.ico + "</span>" +
+        "<span class='gc-body'><span class='gc-t'>" + m.t + "</span>" +
+        "<span class='gc-d'>" + m.d + "</span>" +
+        "<span class='gc-best'>" + best + "</span></span>" +
+        "<span class='arrow'>›</span></button>";
+    }).join("");
     v.innerHTML = "<div class='screen'>" +
       "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
-      "<h2 style='flex:1;font-size:19px'>厨房小游戏</h2></div>" +
-      "<p class='sub'>两局都在本机运行，不需要网络。方向键或屏幕按钮操作。</p>" +
-      "<div class='game-list'>" + list.map((g) =>
-        "<button class='game-card' data-game='" + g.id + "'>" +
-        "<span class='gc-t'>" + g.t + "</span><span class='gc-d'>" + g.d + "</span><span class='arrow'>›</span></button>").join("") +
-      "</div><p class='foot-note'>一局结束后显示一条做菜要点。</p></div>";
+      "<h2 style='flex:1;font-size:19px'>小游戏</h2></div>" +
+      "<div class='hub-pts'><span>厨艺积分</span><b>" + MINI.points + "</b></div>" +
+      "<div class='game-list'>" + cards + "</div>" +
+      "<p class='foot-note'>每升一关 +10 积分，积分只留在这台设备上。</p>" +
+      "</div>";
   }
 
   if (state.screen === "game") {
     const kind = (state.game && state.game.kind) || "snake";
-    const title = kind === "snake" ? "贪吃蛇" : "吃豆";
-    v.innerHTML = "<div class='screen game-screen'>" +
-      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
-      "<h2 style='flex:1;font-size:19px'>" + title + "</h2><span class='pill' id='game-score'>0</span></div>" +
-      "<div class='game-wrap'><canvas id='game-canvas' width='360' height='360'></canvas>" +
-      "<div class='game-over' id='game-over' hidden></div></div>" +
-      "<div class='dpad'>" +
+    const meta = GAME_META[kind] || GAME_META.snake;
+    const isWhack = kind === "whack";
+    const pad = "<div class='dpad'>" +
       "<button class='dbtn up' data-game-key='up' aria-label='上'>▲</button>" +
       "<button class='dbtn left' data-game-key='left' aria-label='左'>◀</button>" +
       "<button class='dbtn down' data-game-key='down' aria-label='下'>▼</button>" +
-      "<button class='dbtn right' data-game-key='right' aria-label='右'>▶</button>" +
-      "</div></div>";
+      "<button class='dbtn right' data-game-key='right' aria-label='右'>▶</button></div>";
+    const holes = Array.from({ length: 9 }).map((_, i) =>
+      "<button class='hole' data-hole='" + i + "' aria-label='洞口 " + (i + 1) + "'><span class='egg'>🥚</span></button>").join("");
+    v.innerHTML = "<div class='screen game-screen'>" +
+      "<div class='topbar'><button class='back' data-go='back' aria-label='返回'>‹</button>" +
+      "<h2 style='flex:1;font-size:19px'>" + meta.t + "</h2>" +
+      "<span class='pill'><b id='game-score'>0</b> 分</span></div>" +
+      "<div class='game-hud'><span>第 <b id='game-level'>1</b> 关</span>" +
+      "<span id='game-prog'>0 / 5</span><span>积分 <b id='game-pts'>0</b></span></div>" +
+      (isWhack
+        ? "<div class='whack'>" + holes + "</div>"
+        : "<div class='game-wrap'><canvas id='game-canvas' width='360' height='360'></canvas></div>" + pad) +
+      "<div class='game-banner' id='game-banner' hidden></div>" +
+      "<div class='game-over' id='game-over' hidden></div>" +
+      "<p class='game-tip'>" + (isWhack ? "点冒头的蛋，漏 3 个结束。" : "方向键、按钮或滑动屏幕都能转向。") + "</p>" +
+      "</div>";
     mountGame(kind);
   }
 
@@ -1452,7 +1630,7 @@ document.addEventListener("click", (e) => {
     else openPhoto(lbState.id, lbState.i + 1);
     return;
   }
-  const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft],[data-save],[data-star],[data-eat],[data-copy],[data-photo],[data-folder],[data-rename],[data-drop],[data-newfolder],[data-folder-save],[data-folder-remove],[data-drop-confirm],[data-lvl],[data-daily],[data-game],[data-game-key],[data-game-retry]");
+  const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft],[data-save],[data-star],[data-eat],[data-copy],[data-photo],[data-folder],[data-rename],[data-drop],[data-newfolder],[data-folder-save],[data-folder-remove],[data-drop-confirm],[data-lvl],[data-daily],[data-game],[data-game-key],[data-game-retry],[data-hole]");
   if (!t) return;
   if (t.dataset.photo) {
     const id = t.dataset.photo;
@@ -1571,6 +1749,7 @@ document.addEventListener("click", (e) => {
   if (t.dataset.folderRemove) return askDropFolder(t.dataset.folderRemove);
   if (t.dataset.lvl) { state.learnLevel = t.dataset.lvl; return render(); }
   if (t.dataset.daily) { state.dailyGroup = t.dataset.daily; return render(); }
+  if (t.dataset.hole !== undefined) { whackHit(Number(t.dataset.hole)); return; }
   if (t.dataset.game) {
     pushNav();
     state.game = { kind: t.dataset.game };

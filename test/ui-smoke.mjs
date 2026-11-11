@@ -104,7 +104,7 @@ ok("从今日推荐能返回首页", html().includes("不知道吃什么"));
 click({ go: "learn" });
 ok("学习指南有四个难度", (html().match(/data-lvl=/g) || []).length === 4);
 ok("学习指南有外链条目", (html().match(/class='learn-item'/g) || []).length === 9);
-ok("学习指南有主题和小游戏入口", html().includes("class='learn-topic'") && html().includes("data-go='games'"));
+ok("学习指南有主题", html().includes("class='learn-topic'"));
 ok("学习指南有练手菜", (html().match(/class='chipbtn'/g) || []).length > 0);
 const learnHref = (html().match(/href='https:\/\/search\.bilibili\.com[^']*'/) || [])[0] || "";
 ok("外链指向 B 站搜索", learnHref.length > 20);
@@ -158,15 +158,19 @@ ok("收藏页统计到 1 道", html().includes("1 道"));
 
 // ----- 小游戏 -----
 click({ go: "home" });
+ok("首页有独立的小游戏入口", html().includes("data-go='games'") && html().includes("小游戏"));
 click({ go: "learn" });
+ok("学习指南不再挂小游戏", !html().includes("data-go='games'"));
+click({ go: "home" });
 click({ go: "games" });
-ok("游戏列表有两款", (html().match(/data-game=/g) || []).length === 2);
+ok("游戏列表有三款", (html().match(/data-game=/g) || []).length === 3);
+ok("游戏页显示积分与最高分", html().includes("厨艺积分") && html().includes("class='gc-best'"));
 click({ game: "snake" });
-ok("进入贪吃蛇", mod.state.screen === "game" && html().includes("id='game-canvas'"));
+ok("进入贪吃蛇", mod.state.screen === "game" && html().includes("id='game-canvas'") && html().includes("id='game-level'"));
 click({ go: "back" });
 ok("从游戏返回列表", mod.state.screen === "games");
 click({ go: "back" });
-ok("再返回回到学习指南", mod.state.screen === "learn");
+ok("再返回回到首页", mod.state.screen === "home");
 
 // ----- 删除分类需要确认 -----
 click({ go: "home" });

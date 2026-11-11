@@ -66,3 +66,4 @@ tmp-*
 .lsr.txt
 apk/
 .smoke.log
+.msg.txt
