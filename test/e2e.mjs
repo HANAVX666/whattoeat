@@ -133,6 +133,28 @@ async function main() {
   console.log("  今日推荐：", await ev("[...document.querySelectorAll('.dish .dish-name')].map((x) => x.textContent).join('、')"));
   await shot("v350-daily.png");
 
+  // 深浅色：首页按钮切换、持久化、口味档案三选项
+  await nav("http://127.0.0.1:" + PORT + "/?e2e=theme");
+  ok("首页有深浅色按钮", (await ev("!!document.querySelector('[data-theme-cycle]')")) === true);
+  ok("默认跟随系统是浅色", (await ev("document.documentElement.dataset.theme")) === "light", await ev("document.documentElement.dataset.theme"));
+  await click("[data-theme-cycle]");
+  ok("点一下切到深色", (await ev("document.documentElement.dataset.theme")) === "dark");
+  ok("深色写进 localStorage", (await ev("localStorage.getItem('theme')")) === "dark");
+  ok("深色背景够深", /rgb\(2[0-9], 1[0-9], 1[0-9]\)/.test(await ev("getComputedStyle(document.body).backgroundColor")), await ev("getComputedStyle(document.body).backgroundColor"));
+  await shot("v353-home-dark-btn.png");
+  await nav("http://127.0.0.1:" + PORT + "/?e2e=theme2");
+  ok("刷新后仍是深色", (await ev("document.documentElement.dataset.theme")) === "dark");
+  await click("[data-go='profile']");
+  ok("口味档案有三个外观选项", (await ev("document.querySelectorAll('[data-theme-set]').length")) === 3);
+  await click("[data-theme-set='light']");
+  ok("选浅色立刻生效", (await ev("document.documentElement.dataset.theme")) === "light");
+  ok("浅色写进 localStorage", (await ev("localStorage.getItem('theme')")) === "light");
+  await shot("v353-profile-appearance.png");
+  await click("[data-theme-set='dark']");
+  ok("选深色立刻生效", (await ev("document.documentElement.dataset.theme")) === "dark");
+  await click("[data-theme-set='auto']");
+  ok("选跟随系统回到 auto", (await ev("localStorage.getItem('theme')")) === "auto");
+
   // 暗色模式
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
   await nav("http://127.0.0.1:" + PORT + "/?e2e=dark");

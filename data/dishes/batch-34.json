@@ -1,0 +1,782 @@
+[
+ {
+  "aliases": [],
+  "image": "",
+  "id": "xiang-chun-chao-dan",
+  "name": "香椿炒蛋",
+  "region": "家常",
+  "diet": "素",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炒",
+  "form": "菜",
+  "timeMin": 10,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "香椿",
+   "鸡蛋"
+  ],
+  "tags": [
+   "十分钟快手",
+   "早餐",
+   "下饭"
+  ],
+  "steps": [
+   "香椿洗净，水开后焯 30 秒，变绿就捞出过凉。",
+   "挤干水分切碎；鸡蛋加盐和一勺清水打散。",
+   "蛋液里拌入香椿碎，搅匀。",
+   "热锅多放一点油，倒入蛋液，边缘凝固再推炒。",
+   "八成凝固就关火，用余温焖熟，出锅。"
+  ],
+  "tips": "香椿必须焯水，亚硝酸盐高；焯完挤干，炒的时候才不会出汤。",
+  "imageQuery": "香椿炒蛋"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "ji-cai-chao-nian-gao",
+  "name": "荠菜炒年糕",
+  "region": "浙",
+  "diet": "素",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炒",
+  "form": "主食",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "荠菜",
+   "年糕"
+  ],
+  "tags": [
+   "便宜",
+   "一人食"
+  ],
+  "steps": [
+   "荠菜洗净切碎，年糕切薄片，冷水泡 5 分钟。",
+   "热锅少油，下荠菜碎炒出香味。",
+   "加年糕片和半碗水，中火翻炒到年糕变软。",
+   "加盐和一点糖调味，汤汁收干就出锅。"
+  ],
+  "tips": "年糕先泡水不容易粘锅；水别多，炒到刚好裹住年糕。",
+  "imageQuery": "荠菜炒年糕"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "xiang-gan-ma-lan-tou",
+  "name": "香干马兰头",
+  "region": "苏",
+  "diet": "素",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "凉拌",
+  "form": "小吃",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3,
+  "mainIngredients": [
+   "马兰头",
+   "香干"
+  ],
+  "tags": [
+   "下酒",
+   "减脂",
+   "便宜"
+  ],
+  "steps": [
+   "马兰头洗净，开水焯 40 秒，捞出过凉挤干。",
+   "马兰头切碎，香干切小丁，一起放进碗里。",
+   "加盐、糖、香油拌匀，尝一下咸淡。",
+   "装进小碗压实，倒扣在盘子上更好看。"
+  ],
+  "tips": "马兰头焯完一定要挤干，拌出来才香不出水。",
+  "imageQuery": "香干马兰头"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "lu-sun-chao-xia-ren",
+  "name": "芦笋炒虾仁",
+  "region": "家常",
+  "diet": "荤",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炒",
+  "form": "菜",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "芦笋",
+   "虾仁",
+   "大蒜"
+  ],
+  "tags": [
+   "减脂",
+   "宴客",
+   "下饭"
+  ],
+  "steps": [
+   "芦笋削掉根部老皮，斜切成段，开水焯 30 秒。",
+   "虾仁加盐、料酒和一点淀粉抓匀，腌 5 分钟。",
+   "热锅下油，蒜片爆香，倒虾仁炒到变色盛出。",
+   "下芦笋大火炒 1 分钟，倒回虾仁，加盐翻匀。"
+  ],
+  "tips": "芦笋只取嫩段，老根嚼不动；焯水后过凉能保住翠绿。",
+  "imageQuery": "芦笋炒虾仁"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "shan-yao-chao-mu-er",
+  "name": "山药炒木耳",
+  "region": "家常",
+  "diet": "素",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炒",
+  "form": "菜",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "山药",
+   "木耳",
+   "大蒜"
+  ],
+  "tags": [
+   "减脂",
+   "便宜"
+  ],
+  "steps": [
+   "木耳提前泡发，撕成小朵；山药去皮切薄片。",
+   "山药片泡在清水里，防止发黑。",
+   "热锅下油，蒜片爆香，先下木耳炒 1 分钟。",
+   "倒山药片大火快炒，加盐和一点水，炒到断生。"
+  ],
+  "tips": "山药黏液容易手痒，削皮时戴手套；泡水能防氧化发黑。",
+  "imageQuery": "山药炒木耳"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "he-lan-dou-chao-la-chang",
+  "name": "荷兰豆炒腊肠",
+  "region": "粤",
+  "diet": "荤",
+  "taste": "适中",
+  "spicy": 0,
+  "method": "炒",
+  "form": "菜",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "荷兰豆",
+   "腊肠",
+   "大蒜"
+  ],
+  "tags": [
+   "下饭",
+   "下酒"
+  ],
+  "steps": [
+   "荷兰豆撕掉两边的筋，洗净；腊肠斜切薄片。",
+   "水开加一点盐，荷兰豆焯 30 秒捞出。",
+   "热锅不放油，先下腊肠小火煸出油。",
+   "加蒜片和荷兰豆大火炒 1 分钟，加盐翻匀。"
+  ],
+  "tips": "腊肠本身有咸味，盐最后少放；荷兰豆一定要炒熟。",
+  "imageQuery": "荷兰豆炒腊肠"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "ban-li-shao-ji",
+  "name": "板栗烧鸡",
+  "region": "家常",
+  "diet": "荤",
+  "taste": "适中",
+  "spicy": 0,
+  "method": "炖煮",
+  "form": "菜",
+  "timeMin": 50,
+  "difficulty": 2,
+  "popularity": 4,
+  "mainIngredients": [
+   "板栗",
+   "鸡腿",
+   "姜"
+  ],
+  "tags": [
+   "下饭",
+   "宴客",
+   "暖心"
+  ],
+  "steps": [
+   "鸡腿剁块，冷水下锅焯水，撇沫后捞出。",
+   "板栗去壳，开水煮 5 分钟，剥掉内膜。",
+   "锅里少油，下姜片和鸡块煸到表面微黄。",
+   "加生抽、老抽和料酒，倒热水没过鸡块。",
+   "下板栗，小火炖 25 分钟，大火收汁。"
+  ],
+  "tips": "板栗先煮一下好剥；收汁时勤翻，板栗容易粘底。",
+  "imageQuery": "板栗烧鸡"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "chun-sun-shao-rou",
+  "name": "春笋烧肉",
+  "region": "浙",
+  "diet": "荤",
+  "taste": "适中",
+  "spicy": 0,
+  "method": "炖煮",
+  "form": "菜",
+  "timeMin": 50,
+  "difficulty": 2,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "春笋",
+   "五花肉",
+   "姜"
+  ],
+  "tags": [
+   "下饭",
+   "宴客"
+  ],
+  "steps": [
+   "春笋去壳切滚刀块，开水焯 3 分钟去涩。",
+   "五花肉切块，冷水下锅焯水，捞出冲净。",
+   "锅里不放油，下肉块煸到出油、微黄。",
+   "加姜片、生抽、老抽和冰糖，倒热水没过肉。",
+   "小火炖 30 分钟，下春笋再炖 10 分钟收汁。"
+  ],
+  "tips": "春笋必须先焯水，不然涩口；用五花肉自己出的油更香。",
+  "imageQuery": "春笋烧肉"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "can-dou-chao-xia-ren",
+  "name": "蚕豆炒虾仁",
+  "region": "家常",
+  "diet": "荤",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炒",
+  "form": "菜",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "蚕豆",
+   "虾仁"
+  ],
+  "tags": [
+   "下饭",
+   "宴客"
+  ],
+  "steps": [
+   "蚕豆剥壳取豆，开水焯 1 分钟捞出。",
+   "虾仁加盐、料酒、淀粉抓匀，腌 5 分钟。",
+   "热锅下油，虾仁炒到变色先盛出。",
+   "下蚕豆炒 1 分钟，倒回虾仁，加盐翻匀。"
+  ],
+  "tips": "蚕豆要煮到熟透，半生的有豆腥味；虾仁别久炒。",
+  "imageQuery": "蚕豆炒虾仁"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "qing-zheng-duo-bao-yu",
+  "name": "清蒸多宝鱼",
+  "region": "粤",
+  "diet": "荤",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "蒸",
+  "form": "菜",
+  "timeMin": 25,
+  "difficulty": 2,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "多宝鱼",
+   "姜",
+   "小葱",
+   "蒸鱼豉油"
+  ],
+  "tags": [
+   "宴客",
+   "减脂"
+  ],
+  "steps": [
+   "多宝鱼洗净擦干，两面各划两刀。",
+   "盘底垫姜片和葱段，鱼放上去，身上再放几片姜。",
+   "水开后上锅，大火蒸 8 分钟，关火焖 2 分钟。",
+   "倒掉盘里的水，夹掉姜葱，淋蒸鱼豉油。",
+   "铺新葱丝，浇一勺热油激香。"
+  ],
+  "tips": "蒸出来的水一定倒掉，不然腥；鱼眼凸出就是熟了。",
+  "imageQuery": "清蒸多宝鱼"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "xiang-jian-san-wen-yu",
+  "name": "香煎三文鱼",
+  "region": "其他",
+  "diet": "荤",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "煎烤",
+  "form": "菜",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "三文鱼",
+   "黄油"
+  ],
+  "tags": [
+   "减脂",
+   "一人食",
+   "十分钟快手"
+  ],
+  "steps": [
+   "三文鱼擦干水分，两面抹盐和黑胡椒，腌 5 分钟。",
+   "平底锅烧热，放一点黄油化开。",
+   "鱼皮朝下入锅，中火煎 3 分钟不要动。",
+   "翻面再煎 2 分钟，边缘变白就关火。"
+  ],
+  "tips": "鱼下锅前一定擦干，才煎得出脆皮；中心留一点粉最嫩。",
+  "imageQuery": "香煎三文鱼"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "suan-rong-kai-bei-xia",
+  "name": "蒜蓉开背虾",
+  "region": "粤",
+  "diet": "荤",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "蒸",
+  "form": "菜",
+  "timeMin": 20,
+  "difficulty": 2,
+  "popularity": 4,
+  "mainIngredients": [
+   "鲜虾",
+   "大蒜",
+   "粉丝"
+  ],
+  "tags": [
+   "宴客",
+   "下酒"
+  ],
+  "steps": [
+   "粉丝温水泡软，铺在盘底。",
+   "虾剪须开背去虾线，背部切开但不要切断。",
+   "蒜末分两半，一半用油炒香，和生蒜末拌成蒜蓉。",
+   "虾摆在粉丝上，铺蒜蓉，淋一点生抽。",
+   "水开上锅蒸 6 分钟，出锅撒葱花。"
+  ],
+  "tips": "蒜蓉一半生一半熟，香味才有层次；虾蒸久了会老。",
+  "imageQuery": "蒜蓉开背虾"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "yang-xie-zi",
+  "name": "羊蝎子",
+  "region": "其他",
+  "diet": "荤",
+  "taste": "重口",
+  "spicy": 2,
+  "method": "炖煮",
+  "form": "菜",
+  "timeMin": 90,
+  "difficulty": 3,
+  "popularity": 4,
+  "mainIngredients": [
+   "羊蝎子",
+   "姜",
+   "大葱",
+   "干辣椒"
+  ],
+  "tags": [
+   "下酒",
+   "暖心",
+   "宴客"
+  ],
+  "steps": [
+   "羊蝎子冷水泡 1 小时去血水，中途换两次水。",
+   "冷水下锅焯水，加姜和料酒，撇净浮沫捞出。",
+   "锅里下油，炒香葱姜、干辣椒和花椒。",
+   "下羊蝎子翻炒，加生抽、老抽和热水没过。",
+   "小火炖 60 分钟，加盐调味，再炖 15 分钟。"
+  ],
+  "tips": "泡血水比焯水更去膻；炖到筷子能轻松插透就行。",
+  "imageQuery": "羊蝎子"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "fan-qie-niu-wei-tang",
+  "name": "番茄牛尾汤",
+  "region": "家常",
+  "diet": "荤",
+  "taste": "适中",
+  "spicy": 0,
+  "method": "炖煮",
+  "form": "汤羹",
+  "timeMin": 120,
+  "difficulty": 2,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "牛尾",
+   "番茄",
+   "洋葱"
+  ],
+  "tags": [
+   "汤水",
+   "暖心"
+  ],
+  "steps": [
+   "牛尾冷水泡 30 分钟，冷水下锅焯水，撇沫捞出。",
+   "番茄切块，洋葱切丝。",
+   "锅里少油，下洋葱炒软，加番茄炒出汁。",
+   "下牛尾，倒热水没过，小火炖 90 分钟。",
+   "加盐和一点糖调味，再煮 5 分钟。"
+  ],
+  "tips": "番茄分两次放更浓：一半炒成汁，一半最后 20 分钟下。",
+  "imageQuery": "番茄牛尾汤"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "shan-yao-pai-gu-tang",
+  "name": "山药排骨汤",
+  "region": "家常",
+  "diet": "荤",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炖煮",
+  "form": "汤羹",
+  "timeMin": 70,
+  "difficulty": 2,
+  "popularity": 4,
+  "mainIngredients": [
+   "山药",
+   "排骨",
+   "姜"
+  ],
+  "tags": [
+   "汤水",
+   "暖心",
+   "儿童友好"
+  ],
+  "steps": [
+   "排骨冷水下锅焯水，撇沫后捞出冲净。",
+   "山药去皮切段，泡在清水里防黑。",
+   "排骨加姜片和足量热水，小火炖 40 分钟。",
+   "下山药再炖 20 分钟，加盐调味。"
+  ],
+  "tips": "山药后放，炖久了会化；盐最后放，肉更容易烂。",
+  "imageQuery": "山药排骨汤"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "jiu-niang-yuan-zi",
+  "name": "酒酿圆子",
+  "region": "苏",
+  "diet": "素",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炖煮",
+  "form": "汤羹",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "酒酿",
+   "小圆子",
+   "枸杞"
+  ],
+  "tags": [
+   "汤水",
+   "早餐",
+   "暖心"
+  ],
+  "steps": [
+   "锅里烧水，水开下小圆子，煮到全部浮起。",
+   "加酒酿和枸杞，小火煮 2 分钟。",
+   "按口味加一点糖，搅匀关火。"
+  ],
+  "tips": "酒酿别久煮，香气会跑；圆子浮起来就是熟了。",
+  "imageQuery": "酒酿圆子"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "yin-er-xue-li-geng",
+  "name": "银耳雪梨羹",
+  "region": "家常",
+  "diet": "素",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炖煮",
+  "form": "汤羹",
+  "timeMin": 60,
+  "difficulty": 1,
+  "popularity": 4,
+  "mainIngredients": [
+   "银耳",
+   "雪梨",
+   "枸杞"
+  ],
+  "tags": [
+   "汤水",
+   "暖心"
+  ],
+  "steps": [
+   "银耳冷水泡 1 小时，去掉黄根，撕成小朵。",
+   "银耳加足量水，小火炖 40 分钟到出胶。",
+   "雪梨去皮切块，和枸杞一起下锅。",
+   "再炖 15 分钟，加冰糖化开即可。"
+  ],
+  "tips": "银耳撕得越碎越容易出胶；梨后放，才不会炖成泥。",
+  "imageQuery": "银耳雪梨羹"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "sheng-gun-yu-pian-zhou",
+  "name": "生滚鱼片粥",
+  "region": "粤",
+  "diet": "荤",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炖煮",
+  "form": "主食",
+  "timeMin": 50,
+  "difficulty": 2,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "鱼片",
+   "大米",
+   "姜",
+   "小葱"
+  ],
+  "tags": [
+   "早餐",
+   "暖心",
+   "汤水"
+  ],
+  "steps": [
+   "大米洗净，加一点油和盐腌 10 分钟。",
+   "锅里水开下米，小火煮 30 分钟到开花。",
+   "鱼片加盐、姜丝和淀粉抓匀，腌 5 分钟。",
+   "粥保持微沸，鱼片一片片下锅，煮 1 分钟。",
+   "加盐、白胡椒，撒葱花出锅。"
+  ],
+  "tips": "鱼片最后下，一变色就关火；粥底要稀一点才好滚。",
+  "imageQuery": "生滚鱼片粥"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "xi-qin-bai-he",
+  "name": "西芹百合",
+  "region": "家常",
+  "diet": "素",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炒",
+  "form": "菜",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "芹菜",
+   "百合"
+  ],
+  "tags": [
+   "减脂",
+   "宴客"
+  ],
+  "steps": [
+   "西芹撕掉老筋，斜切薄片；百合掰成瓣洗净。",
+   "水开加一点盐，西芹焯 30 秒捞出。",
+   "热锅少油，下西芹大火炒 1 分钟。",
+   "加百合和盐，炒到百合边缘变透明就出锅。"
+  ],
+  "tips": "百合最后放，炒久了会碎；西芹焯水能去涩。",
+  "imageQuery": "西芹百合"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "ma-ti-chao-xia-ren",
+  "name": "马蹄炒虾仁",
+  "region": "粤",
+  "diet": "荤",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炒",
+  "form": "菜",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "马蹄",
+   "虾仁",
+   "荷兰豆"
+  ],
+  "tags": [
+   "下饭",
+   "宴客"
+  ],
+  "steps": [
+   "马蹄去皮切薄片，荷兰豆撕筋焯水 30 秒。",
+   "虾仁加盐、料酒和淀粉腌 5 分钟。",
+   "热锅下油，虾仁炒到变色盛出。",
+   "下马蹄和荷兰豆炒 1 分钟，倒回虾仁加盐。"
+  ],
+  "tips": "马蹄脆，全程大火快炒；荷兰豆不熟会闹肚子。",
+  "imageQuery": "马蹄炒虾仁"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "jiu-cai-chao-he-xia",
+  "name": "韭菜炒河虾",
+  "region": "家常",
+  "diet": "荤",
+  "taste": "适中",
+  "spicy": 0,
+  "method": "炒",
+  "form": "菜",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "韭菜",
+   "河虾"
+  ],
+  "tags": [
+   "下饭",
+   "下酒"
+  ],
+  "steps": [
+   "河虾剪去虾枪，洗净沥干；韭菜切段。",
+   "热锅多放一点油，下河虾大火炒到变红。",
+   "加姜末和料酒，炒出香味。",
+   "下韭菜段，大火炒 30 秒，加盐出锅。"
+  ],
+  "tips": "河虾要沥干再下锅，不然溅油；韭菜炒久了会塌。",
+  "imageQuery": "韭菜炒河虾"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "suan-rong-tong-hao",
+  "name": "蒜蓉茼蒿",
+  "region": "家常",
+  "diet": "素",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炒",
+  "form": "菜",
+  "timeMin": 10,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "茼蒿",
+   "大蒜"
+  ],
+  "tags": [
+   "十分钟快手",
+   "减脂"
+  ],
+  "steps": [
+   "茼蒿洗净切段，梗和叶分开放。",
+   "大蒜切末，热锅下油爆香一半蒜末。",
+   "先下茼蒿梗大火炒 30 秒，再下叶子。",
+   "加盐和剩下的蒜末，炒软就出锅。"
+  ],
+  "tips": "茼蒿出水快，全程大火，炒软立刻出锅。",
+  "imageQuery": "蒜蓉茼蒿"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "shang-tang-dou-miao",
+  "name": "上汤豆苗",
+  "region": "粤",
+  "diet": "素",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "炖煮",
+  "form": "汤羹",
+  "timeMin": 15,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "豆苗",
+   "皮蛋",
+   "咸鸭蛋",
+   "大蒜"
+  ],
+  "tags": [
+   "汤水",
+   "宴客"
+  ],
+  "steps": [
+   "豆苗洗净；皮蛋和咸鸭蛋剥壳切小丁。",
+   "锅里少油，下蒜末和蛋丁炒香。",
+   "倒两碗热水，煮开成奶白汤底。",
+   "下豆苗煮 1 分钟，加盐和白胡椒。"
+  ],
+  "tips": "蛋丁先炒再加热水，汤才白；豆苗久煮会黄。",
+  "imageQuery": "上汤豆苗"
+ },
+ {
+  "aliases": [],
+  "image": "",
+  "id": "bai-he-zheng-nan-gua",
+  "name": "百合蒸南瓜",
+  "region": "家常",
+  "diet": "素",
+  "taste": "清淡",
+  "spicy": 0,
+  "method": "蒸",
+  "form": "菜",
+  "timeMin": 25,
+  "difficulty": 1,
+  "popularity": 3.5,
+  "mainIngredients": [
+   "百合",
+   "南瓜"
+  ],
+  "tags": [
+   "减脂",
+   "儿童友好",
+   "早餐"
+  ],
+  "steps": [
+   "南瓜去皮去瓤，切厚片码在盘子里。",
+   "百合掰瓣洗净，铺在南瓜上。",
+   "水开上锅，中火蒸 15 分钟。",
+   "出锅淋一点蜂蜜或撒枸杞。"
+  ],
+  "tips": "南瓜选老南瓜，蒸出来才粉甜；百合变透明就熟了。",
+  "imageQuery": "百合蒸南瓜"
+ }
+]

@@ -46,6 +46,9 @@ const ok = (name, cond) => { checks.push([name, !!cond]); if (!cond) console.log
 
 ok("首屏渲染出三个入口", html().includes("不知道吃什么") && html().includes("家里有食材"));
 ok("搜索入口排在最上面", html().indexOf("home-search") > 0 && html().indexOf("home-search") < html().indexOf("class='big"));
+ok("首页有深浅色切换按钮", html().includes("data-theme-cycle"));
+click({ themeCycle: "" });
+ok("点按钮切到深色", mod.state.theme === "dark" && html().includes("☀️"));
 click({ go: "quiz" });
 ok("进答题页", html().includes("1 / ") && html().includes("class='opt"));
 // 一路答题直到进入 soft
@@ -204,6 +207,11 @@ click({ go: "home" });
 ok("首页有口味档案入口", html().includes("data-go='profile'"));
 click({ go: "profile" });
 ok("口味档案列出不想吃", html().includes("不想吃") && html().includes("data-undislike='" + fId + "'"));
+ok("口味档案有三种外观可选", (html().match(/data-theme-set=/g) || []).length === 3);
+click({ themeSet: "light" });
+ok("改成浅色", mod.state.theme === "light" && html().includes("data-theme-set='light'"));
+click({ themeSet: "auto" });
+ok("能改回跟随系统", mod.state.theme === "auto");
 click({ undislike: fId });
 ok("恢复后从不想吃里移除", !mod.state.disliked.has(fId));
 

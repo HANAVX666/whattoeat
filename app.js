@@ -1,5 +1,31 @@
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- 深浅色：auto 跟随系统，手动选择记在本机 ---------- */
+const THEME_KEY = "theme";
+function themeResolved() {
+  if (state.theme === "light" || state.theme === "dark") return state.theme;
+  try {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  } catch (e) { return "light"; }
+}
+function applyTheme() {
+  const r = themeResolved();
+  try {
+    const d = document.documentElement;
+    d.dataset.theme = r;
+    d.style.colorScheme = r;
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute("content", r === "dark" ? "#14100d" : "#fbf8f3");
+  } catch (e) {}
+  return r;
+}
+function setTheme(t) {
+  state.theme = t === "light" || t === "dark" ? t : "auto";
+  try { localStorage.setItem(THEME_KEY, state.theme); } catch (e) {}
+  applyTheme();
+  render();
+}
 const SEARCH = {
   img: (n) => "https://cn.bing.com/images/search?q=" + encodeURIComponent(n + " 成品"),
   recipes: (n) => "https://www.xiachufang.com/search/?keyword=" + encodeURIComponent(n),
@@ -11,7 +37,7 @@ let PHOTOS = {};
 let photosReady = false;
 let photosLoading = null;
 let THUMBS = new Set();
-const state = { screen: "home", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), saved: new Set(), eaten: [], batch: [], reasons: new Map(), refresh: 0, pantryText: "", collections: [], stack: [], folder: null, sheet: null, learnLevel: "初", current: null, dailyGroup: null, query: "", stepsMiss: new Set(), exhausted: false, poolN: 0, remaining: 0 };
+const state = { screen: "home", theme: "auto", answers: {}, soft: new Set(), qi: 0, shown: new Set(), disliked: new Set(), saved: new Set(), eaten: [], batch: [], reasons: new Map(), refresh: 0, pantryText: "", collections: [], stack: [], folder: null, sheet: null, learnLevel: "初", current: null, dailyGroup: null, query: "", stepsMiss: new Set(), exhausted: false, poolN: 0, remaining: 0 };
 
 const QUESTIONS = [
   { id: "src", q: "今天自己做，还是点外卖？", opts: [["自己动手做", "cook"], ["点外卖 / 出去吃", "out"], ["都行", "any"]] },
@@ -880,6 +906,7 @@ function render() {
   if (state.screen === "home") {
     v.innerHTML = "<div class='screen'>" +
       "<div class='hero-home'><span class='kicker'>今天吃什么</span>" +
+      "<button class='theme-btn' data-theme-cycle aria-label='切换深浅色' title='" + (themeResolved() === "dark" ? "切到浅色" : "切到深色") + "'>" + (themeResolved() === "dark" ? "☀️" : "🌙") + "</button>" +
       "<h1>别纠结了，<em>我帮你挑</em></h1></div>" +
       "<button class='home-search' data-go='search'><span class='hs-ico'>🔍</span>" +
       "<span class='hs-t'>搜菜名、食材</span><span class='hs-n'>" + DISHES.length + " 道</span><span class='hs-a'>›</span></button>" +
@@ -1068,6 +1095,10 @@ function render() {
       (dis.length ? "<div class='folders'>" + disRows + "</div>" : "<p class='daily-hint'>还没有排除任何菜。</p>") +
       "<div class='group-title' style='margin-top:26px'>最近吃过<span class='n'>" + ate.length + "</span></div>" +
       (ate.length ? "<div class='folders'>" + ateRows + "</div>" : "<p class='daily-hint'>还没记录过。</p>") +
+      "<div class='appearance'><div class='group-title'>外观<span class='n'>" + (state.theme === "auto" ? "跟随系统" : state.theme === "dark" ? "深色" : "浅色") + "</span></div>" +
+      "<div class='chips'>" + [["auto", "跟随系统"], ["light", "浅色"], ["dark", "深色"]].map(([k, l]) =>
+        "<button class='chipbtn" + (state.theme === k ? " sel" : "") + "' data-theme-set='" + k + "'>" + l + "</button>").join("") + "</div>" +
+      "<p class='theme-note'>晚上用深色不刺眼；选择只记在这台设备上。</p></div>" +
       "<p class='foot-note'>这些记录只存在这台设备上。</p></div>";
   }
 
@@ -1398,6 +1429,11 @@ document.addEventListener("click", (e) => {
     else openPhoto(lbState.id, lbState.i + 1);
     return;
   }
+  const tb = e.target.closest("[data-theme-cycle],[data-theme-set]");
+  if (tb && tb.dataset) {
+    if (tb.dataset.themeCycle !== undefined) { setTheme(themeResolved() === "dark" ? "light" : "dark"); return; }
+    if (tb.dataset.themeSet) { setTheme(tb.dataset.themeSet); return; }
+  }
   const t = e.target.closest("[data-go],[data-ans],[data-id],[data-add],[data-dislike],[data-soft],[data-save],[data-star],[data-eat],[data-copy],[data-photo],[data-folder],[data-rename],[data-drop],[data-newfolder],[data-folder-save],[data-folder-remove],[data-drop-confirm],[data-lvl],[data-daily],[data-undislike],[data-uneat],[data-fillq]");
   if (!t) return;
   if (t.dataset.photo) {
@@ -1614,6 +1650,8 @@ async function loadDishes() {
     $("#app").innerHTML = "<div class='empty'>菜谱库加载失败。<br>请用本地服务器打开。</div>";
     return;
   }
+  try { const th = localStorage.getItem(THEME_KEY); if (th === "auto" || th === "light" || th === "dark") state.theme = th; } catch (e) {}
+  applyTheme();
   try { state.disliked = new Set(JSON.parse(localStorage.getItem("disliked") || "[]")); } catch (e) {}
   try { state.saved = new Set(JSON.parse(localStorage.getItem("saved") || "[]")); } catch (e) {}
   try { state.eaten = JSON.parse(localStorage.getItem("eaten") || "[]") || []; } catch (e) { state.eaten = []; }
@@ -1630,6 +1668,20 @@ async function loadDishes() {
   if (deep && DISHES.some((d) => d.id === deep)) { state.current = deep; state.screen = "detail"; }
   render();
 })();
+
+// 系统深浅色变化时，只有「跟随系统」才跟着切
+if (typeof window !== "undefined" && window.matchMedia) {
+  try {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSys = () => {
+      if (state.theme !== "auto") return;
+      applyTheme();
+      if (state.screen === "home" || state.screen === "profile") render();
+    };
+    if (mq.addEventListener) mq.addEventListener("change", onSys);
+    else if (mq.addListener) mq.addListener(onSys);
+  } catch (e) {}
+}
 
 // 分享/浏览器里直接改 hash 时也能进详情，不用整页重载
 if (typeof window !== "undefined" && window.addEventListener) {

@@ -1330,5 +1330,105 @@
       "角瓜"
     ],
     "group": "蔬菜"
+  },
+  {
+    "name": "香椿",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "荠菜",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "马兰头",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "芦笋",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "山药",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "荷兰豆",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "板栗",
+    "aliases": [],
+    "group": "干货"
+  },
+  {
+    "name": "蚕豆",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "多宝鱼",
+    "aliases": [],
+    "group": "水产"
+  },
+  {
+    "name": "三文鱼",
+    "aliases": [],
+    "group": "海鲜"
+  },
+  {
+    "name": "羊蝎子",
+    "aliases": [],
+    "group": "畜肉"
+  },
+  {
+    "name": "牛尾",
+    "aliases": [],
+    "group": "畜肉"
+  },
+  {
+    "name": "酒酿",
+    "aliases": [],
+    "group": "其他"
+  },
+  {
+    "name": "小圆子",
+    "aliases": [],
+    "group": "主食"
+  },
+  {
+    "name": "雪梨",
+    "aliases": [],
+    "group": "水果"
+  },
+  {
+    "name": "马蹄",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "河虾",
+    "aliases": [],
+    "group": "水产"
+  },
+  {
+    "name": "百合",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "茼蒿",
+    "aliases": [],
+    "group": "蔬菜"
+  },
+  {
+    "name": "豆苗",
+    "aliases": [],
+    "group": "蔬菜"
   }
 ]
